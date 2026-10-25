@@ -19,7 +19,7 @@ Screenshots were captured on the P6 during development. The App Switcher image i
 ## What it does
 
 - D-pad navigation, editable app dock, All Apps library, custom tile rendering, and a recent-app App Switcher.
-- Home Control Centre and an optional over-app Control Centre, subject to Android/device support.
+- Home Control Centre and an optional over-app Control Centre. On the tested P6, the [optional Mac-assisted Menu bridge](docs/P6-MENU-BRIDGE.md) lets a short press of the original remote Menu button toggle Control Centre over apps and a hold open App Switcher while the bridge is running.
 - Clock, Wi-Fi status, live weather with an offline cache, wallpapers and screensaver.
 - Continue Watching from supported Android TV Watch Next entries, Stremio data where available, optional Trakt, and user-managed entries. Luma only displays real progress when a source supplies it. Provider deep links and resume behavior vary.
 - Recovery options to return to Android's Home App selection. The original system launcher is never removed by Luma.
