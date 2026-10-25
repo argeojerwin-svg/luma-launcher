@@ -1,0 +1,266 @@
+{
+  "com.android.vending": {
+    "name": "Apps",
+    "motif": "apps",
+    "hue": 211,
+    "accent": 275
+  },
+  "com.spotify.tv.android": {
+    "name": "Music",
+    "motif": "wave",
+    "hue": 151,
+    "accent": 178
+  },
+  "com.google.android.youtube.tv": {
+    "name": "Video",
+    "motif": "play",
+    "hue": 354,
+    "accent": 20
+  },
+  "com.apple.atve.androidtv.appletv": {
+    "name": "Apple TV",
+    "motif": "cinema",
+    "hue": 225,
+    "accent": 290
+  },
+  "com.stremio.one": {
+    "name": "Stremio",
+    "motif": "prism",
+    "hue": 258,
+    "accent": 202
+  },
+  "com.netflix.ninja": {
+    "name": "Netflix",
+    "motif": "cinema",
+    "hue": 355,
+    "accent": 325
+  },
+  "com.spocky.projengmenu": {
+    "name": "Projectivy",
+    "motif": "mountain",
+    "hue": 28,
+    "accent": 347
+  },
+  "com.zeasn.launcher": {
+    "name": "Smart TV",
+    "motif": "home",
+    "hue": 216,
+    "accent": 177
+  },
+  "com.aumi.TvdFileManager": {
+    "name": "File Manager",
+    "motif": "folder",
+    "hue": 38,
+    "accent": 20
+  },
+  "com.softwinner.TvdFileManager": {
+    "name": "Files",
+    "motif": "folder",
+    "hue": 202,
+    "accent": 175
+  },
+  "com.android.documentsui": {
+    "name": "Documents",
+    "motif": "folder",
+    "hue": 215,
+    "accent": 270
+  },
+  "com.softwinner.awmanager": {
+    "name": "File Library",
+    "motif": "folder",
+    "hue": 38,
+    "accent": 20
+  },
+  "com.android.tv.settings": {
+    "name": "Settings",
+    "motif": "gear",
+    "hue": 218,
+    "accent": 200
+  },
+  "com.android.settings": {
+    "name": "Settings",
+    "motif": "gear",
+    "hue": 218,
+    "accent": 200
+  },
+  "com.yhk.setting": {
+    "name": "Projector Settings",
+    "motif": "sliders",
+    "hue": 205,
+    "accent": 248
+  },
+  "com.softwinner.settingssetup": {
+    "name": "Display Settings",
+    "motif": "sliders",
+    "hue": 209,
+    "accent": 170
+  },
+  "com.softwinner.settingsassist": {
+    "name": "System Settings",
+    "motif": "gear",
+    "hue": 232,
+    "accent": 268
+  },
+  "com.softwinner.awsource": {
+    "name": "Inputs",
+    "motif": "input",
+    "hue": 182,
+    "accent": 210
+  },
+  "com.android.calculator2": {
+    "name": "Calculator",
+    "motif": "calculator",
+    "hue": 30,
+    "accent": 350
+  },
+  "com.yhk.developtools": {
+    "name": "Developer Tools",
+    "motif": "code",
+    "hue": 174,
+    "accent": 220
+  },
+  "com.allwinnertech.platinum.media": {
+    "name": "Media Sharing",
+    "motif": "cast",
+    "hue": 221,
+    "accent": 270
+  },
+  "com.softwinner.miracastReceiver": {
+    "name": "Screen Mirroring",
+    "motif": "cast",
+    "hue": 196,
+    "accent": 235
+  },
+  "com.efercro.tvcast": {
+    "name": "Aumi TV",
+    "motif": "orbit",
+    "hue": 195,
+    "accent": 251
+  },
+  "com.yhk.factory": {
+    "name": "Factory Tests",
+    "motif": "scope",
+    "hue": 166,
+    "accent": 203
+  },
+  "com.softwinner.dragonatt": {
+    "name": "Hardware Tests",
+    "motif": "scope",
+    "hue": 170,
+    "accent": 230
+  },
+  "com.softwinner.dragonbox": {
+    "name": "Diagnostics",
+    "motif": "scope",
+    "hue": 186,
+    "accent": 268
+  },
+  "com.yhk.factestinstaller": {
+    "name": "Test Installer",
+    "motif": "download",
+    "hue": 162,
+    "accent": 214
+  },
+  "com.softwinner.tv.factorymenu": {
+    "name": "Factory Menu",
+    "motif": "chip",
+    "hue": 177,
+    "accent": 140
+  },
+  "com.softwinner.update": {
+    "name": "System Update",
+    "motif": "upload",
+    "hue": 204,
+    "accent": 170
+  },
+  "com.yhk.qeota": {
+    "name": "System Update",
+    "motif": "upload",
+    "hue": 210,
+    "accent": 170
+  },
+  "com.android.music": {
+    "name": "Local Music",
+    "motif": "note",
+    "hue": 325,
+    "accent": 276
+  },
+  "com.android.soundrecorder": {
+    "name": "Recorder",
+    "motif": "mic",
+    "hue": 358,
+    "accent": 28
+  },
+  "com.android.inputmethod.pinyin": {
+    "name": "Keyboard",
+    "motif": "keyboard",
+    "hue": 34,
+    "accent": 12
+  },
+  "com.android.inputmethod.latin": {
+    "name": "System Keyboard",
+    "motif": "keyboard",
+    "hue": 215,
+    "accent": 270
+  },
+  "com.softwinner.tvinfo": {
+    "name": "Device Information",
+    "motif": "info",
+    "hue": 215,
+    "accent": 185
+  },
+  "org.chromium.webview_shell": {
+    "name": "WebView Browser",
+    "motif": "globe",
+    "hue": 211,
+    "accent": 175
+  },
+  "com.android.systemui": {
+    "name": "System UI",
+    "motif": "layers",
+    "hue": 246,
+    "accent": 207
+  },
+  "com.softwinner.TvdVideo": {
+    "name": "Local Video",
+    "motif": "film",
+    "hue": 278,
+    "accent": 330
+  },
+  "zeasn.open.technical.tv.store": {
+    "name": "App Store",
+    "motif": "bag",
+    "hue": 279,
+    "accent": 220
+  },
+  "com.softwinner.ImageParser": {
+    "name": "Photos",
+    "motif": "photo",
+    "hue": 36,
+    "accent": 325
+  },
+  "com.softwinner.awlogsettings": {
+    "name": "System Logs",
+    "motif": "code",
+    "hue": 230,
+    "accent": 180
+  },
+  "@apps": {
+    "name": "All Apps",
+    "motif": "apps",
+    "hue": 212,
+    "accent": 278
+  },
+  "@control": {
+    "name": "Control Centre",
+    "motif": "sliders",
+    "hue": 215,
+    "accent": 182
+  },
+  "com.softwinner.tcorrection": {
+    "name": "Projection",
+    "motif": "projection",
+    "hue": 202,
+    "accent": 265
+  }
+}
