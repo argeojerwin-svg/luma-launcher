@@ -14,4 +14,6 @@ On an AUMI P6 running Android 11, a full reboot restored Luma's foreground servi
 
 The settings toggle stopped and restarted the service and listener cleanly. After deliberately stopping only the listener, Luma recreated it during its next recovery check without the Windows watcher.
 
+The owner subsequently confirmed short Menu, held Menu and the YouTube keyboard work with the physical remote. A signed, ready-to-install build is linked in the [quick installation guide](P6-QUICK-INSTALL.md).
+
 This remains a draft based on PR #1; merge that tested work first. The tested P6 already exposes root-capable, unauthenticated debugging. The helper does not enable that access on other devices. Network debugging must remain available after boot. A projector without this access still needs an external bridge or another privileged integration.

@@ -1,0 +1,44 @@
+# Install the updated Luma P6 build
+
+[Download Luma-P6-1.0.0.apk](https://github.com/argeojerwin-svg/luma-launcher/releases/download/v1.0.0-p6.1/Luma-P6-1.0.0.apk)
+
+[Release page](https://github.com/argeojerwin-svg/luma-launcher/releases/tag/v1.0.0-p6.1) · [All source changes](https://github.com/smzaki101-lab/luma-launcher/pull/2)
+
+## Install
+
+1. Download **Luma-P6-1.0.0.apk** from the link above, or from **Assets** on the release page. The source-code ZIP is for development.
+2. Open the APK on the projector using its file manager or Android TV installer. A USB drive can be used to copy the downloaded APK to the projector. Allow installation from that installer if Android asks, then choose **Install** or **Update**.
+3. Open **Luma** from your existing app list. You can try it before choosing it as the default Home app.
+
+This single APK includes the launcher, Luma keyboard, QR phone typing, phone Go, YouTube artwork and search shortcut, App Switcher fixes, and the optional P6 projector-only Menu helper. No separate Luma keyboard or bridge APK is needed.
+
+## Enable the keyboard once
+
+In Android's keyboard settings, enable **Luma Keyboard** and select it as the current keyboard. The exact Android settings location varies by firmware. Android requires the user to approve this selection; installing the APK alone cannot select a new keyboard.
+
+Open a normal app search field, such as Stremio Search. The compact QWERTY keyboard appears at the bottom. Scan the QR code with a phone on the same Wi-Fi, type, then tap **Go** on the phone.
+
+YouTube and TizenTube draw their own search keyboards. While either app is open, use Luma's global **Menu → YouTube keyboard** shortcut for QWERTY/QR search. Their own alphabetic search screen remains part of those apps. See [phone keyboard details](PHONE-KEYBOARD.md).
+
+## Enable Menu over other apps on a compatible P6
+
+1. In **Launcher settings → Control Centre inside apps**, allow **Display over other apps**.
+2. Stop any existing Mac/Windows Menu bridge before enabling the built-in helper.
+3. Turn **Projector-only Menu** on. The projector must already have network debugging enabled with the root-capable local debugging access supplied by compatible P6 firmware.
+4. Open another app. Press Menu briefly for Control Centre; hold Menu for App Switcher. After a reboot, allow Luma and the network to finish starting.
+
+The helper runs inside the projector and resumes after reboot, so the PC can be off. It still uses privileged debugging; it is not a general root-free solution for every projector. It does not unlock or modify the firmware. If the notification says it is waiting for local debugging, review the [requirements and fallback](PROJECTOR-ONLY-MENU.md). Normal launcher and standard Android keyboard features do not require this helper.
+
+## If installation fails
+
+Use the actual `.apk` file and confirm installation from that installer is permitted. If Android says an existing package conflicts, an older debug build may have a different signing key. Keep the existing installation and its data until the signing-key issue is understood; uninstalling would erase Luma preferences. See [installation and recovery](INSTALL.md).
+
+## What was checked
+
+- APK signature verified against the established Luma release certificate.
+- Download candidate is byte-for-byte identical to the installed, working P6 APK.
+- Release build and release lint passed; all 38 JVM tests passed.
+- Full reboot, local listener recovery, on/off setting, short Menu, held Menu and the TizenTube QWERTY/QR shortcut were checked on the AUMI P6 running Android 11.
+- The owner confirmed short Menu, held Menu and YouTube keyboard work on the physical remote.
+
+This is a P6 preview release from the contributor fork while the changes are reviewed upstream. Other projector models and firmware have not been validated. The APK identifies itself as Luma 1.0.0, version code 44; the release tag `v1.0.0-p6.1` distinguishes this feature build.
