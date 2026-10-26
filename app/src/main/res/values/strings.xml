@@ -1,4 +1,5 @@
 <resources>
+    <string name="wallpaper_dream_name">Luma wallpaper</string>
     <string name="local_menu_channel">Projector-only Menu</string>
     <string name="local_menu_title">Luma remote menu active</string>
     <string name="local_menu_notification">Menu works in apps without a PC. Tap to manage.</string>

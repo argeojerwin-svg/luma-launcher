@@ -1,6 +1,6 @@
 # Installation and recovery
 
-**Updated P6 build with QWERTY/QR typing and projector-only Menu:** download [Luma-P6-1.0.2.apk](https://github.com/argeojerwin-svg/luma-launcher/releases/download/v1.0.2-p6.1/Luma-P6-1.0.2.apk) and follow the [quick installation guide](P6-QUICK-INSTALL.md). The older general release below does not contain these latest additions.
+**Updated P6 build with QWERTY/QR typing and projector-only Menu:** download [Luma-P6-1.0.3.apk](https://github.com/argeojerwin-svg/luma-launcher/releases/download/v1.0.3-p6.1/Luma-P6-1.0.3.apk) and follow the [quick installation guide](P6-QUICK-INSTALL.md). The older general release below does not contain these latest additions.
 
 Download the [signed v1.0.0 APK](https://github.com/smzaki101-lab/luma-launcher/releases/download/v1.0.0/Luma-v1.0.0-signed.apk) and install it using a compatible Android TV installer or ADB:
 

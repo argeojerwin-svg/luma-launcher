@@ -748,9 +748,25 @@ class LauncherActivity : Activity() {
                     preferences.put("saverMinutes",n);screensaverSettings()
                 }},back={screensaverSettings()})
             },
-            action("Choose local video  ›"){pick("video","video/*")},
-            action("Use landscape instead of video"){preferences.put("video","");screensaverSettings()}
-        ),"Runs only while Luma is on screen. Any remote press wakes it. Video is muted; codec support depends on your projector.",back={settings(7)})
+            action("Use wallpaper for projector idle screen  ›"){selectWallpaperScreensaver()}
+        ),"Shows your wallpaper without app tiles. Select it for the projector's idle screen to replace its factory screensaver too. Any remote press wakes it.",back={settings(7)})
+    }
+    private fun selectWallpaperScreensaver(){
+        val settings=Intent(Settings.ACTION_DREAM_SETTINGS)
+        if(settings.resolveActivity(packageManager)!=null){openIntent(settings,false);return}
+        // P6 firmware omits Android's chooser. Use only its existing local root debugging.
+        io.execute{
+            val result=runCatching{
+                val adb=LoopbackAdb()
+                check(adb.request("shell:id -u").trim()=="0")
+                val component="dev.luma.launcher/.WallpaperDreamService"
+                check(adb.request("shell:settings put secure screensaver_components $component && settings put secure screensaver_enabled 1 && settings get secure screensaver_components").trim()==component)
+            }
+            main.post{if(!isDestroyed){
+                toast(if(result.isSuccess)"Wallpaper selected for the projector screensaver"
+                    else "Could not select screensaver. Enable Projector-only Menu and try again.")
+            }}
+        }
     }
     private fun shortcutSettings() {
         val options=listOf("Menu" to KeyEvent.KEYCODE_MENU,"Play / Pause" to KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,"Info" to KeyEvent.KEYCODE_INFO)

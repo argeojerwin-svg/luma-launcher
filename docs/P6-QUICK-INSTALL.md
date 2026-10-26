@@ -1,18 +1,26 @@
 # Install the updated Luma P6 build
 
-[Download Luma-P6-1.0.2.apk](https://github.com/argeojerwin-svg/luma-launcher/releases/download/v1.0.2-p6.1/Luma-P6-1.0.2.apk)
+[Download Luma-P6-1.0.3.apk](https://github.com/argeojerwin-svg/luma-launcher/releases/download/v1.0.3-p6.1/Luma-P6-1.0.3.apk)
 
-[Release page](https://github.com/argeojerwin-svg/luma-launcher/releases/tag/v1.0.2-p6.1) · [All source changes](https://github.com/smzaki101-lab/luma-launcher/pull/2)
+[Release page](https://github.com/argeojerwin-svg/luma-launcher/releases/tag/v1.0.3-p6.1) · [All source changes](https://github.com/smzaki101-lab/luma-launcher/pull/2)
 
 ## Install
 
-1. Download **Luma-P6-1.0.2.apk** from the link above, or from **Assets** on the release page. The source-code ZIP is for development.
+1. Download **Luma-P6-1.0.3.apk** from the link above, or from **Assets** on the release page. The source-code ZIP is for development.
 2. Open the APK on the projector using its file manager or Android TV installer. A USB drive can be used to copy the downloaded APK to the projector. Allow installation from that installer if Android asks, then choose **Install** or **Update**.
 3. Open **Luma** from your existing app list. You can try it before choosing it as the default Home app.
 
 This single APK includes the launcher, Luma keyboard, QR phone typing, phone Go, YouTube artwork and search shortcut, App Switcher fixes, and the optional P6 projector-only Menu helper. No separate Luma keyboard or bridge APK is needed.
 
 The home screen contains only your pinned apps. Press **Down** from a pinned tile to slide upward into the full app grid, which includes the **Apps** shortcut. Press **Up** from the grid's top row, or **Back**, to return to your previous home selection. The redundant **All Apps** tile has been removed. **OK** on the grid's Apps shortcut opens app discovery and management; Back returns to the grid. Version 1.0.2 adds this navigation.
+
+## Use your wallpaper as the screensaver
+
+In **Launcher settings → Screensaver**, choose **Use wallpaper for projector idle screen**. On Android firmware with a screensaver chooser, select **Luma wallpaper** there. On the tested P6, the button selects it directly using the existing local root-capable debugging; enable Projector-only Menu first if that access is not running. The wallpaper screensaver itself uses Android's normal screensaver service.
+
+Idle mode now shows the active Luma profile's selected wallpaper, without app tiles or a separate video. The factory screensaver is replaced as the selected provider; its package remains installed. Any remote key wakes the screensaver. **Start now** previews the wallpaper while Luma is open. Luma's idle timeout applies while the launcher is foreground; Android's system idle timing remains controlled by the projector.
+
+Version 1.0.3 adds this system screensaver. Its selection button, actual Android dream startup and remote wake were verified on the P6.
 
 ## Enable the keyboard once
 
@@ -43,4 +51,4 @@ Use the actual `.apk` file and confirm installation from that installer is permi
 - Full reboot, local listener recovery, on/off setting, short Menu, held Menu and the TizenTube QWERTY/QR shortcut were checked on the AUMI P6 running Android 11.
 - The owner confirmed short Menu, held Menu and YouTube keyboard work on the physical remote.
 
-This is a P6 preview release from the contributor fork while the changes are reviewed upstream. Other projector models and firmware have not been validated. The APK identifies itself as Luma 1.0.2, version code 46; the release tag `v1.0.2-p6.1` distinguishes this feature build.
+This is a P6 preview release from the contributor fork while the changes are reviewed upstream. Other projector models and firmware have not been validated. The APK identifies itself as Luma 1.0.3, version code 47; the release tag `v1.0.3-p6.1` distinguishes this feature build.
