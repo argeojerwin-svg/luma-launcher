@@ -13,6 +13,11 @@ Luma's own fields still use their existing Save/Cancel behavior. Their QWERTY ed
 
 The remote keyboard includes digits, Shift, symbols, Space, Delete, cursor arrows and Clear. Client apps retain their own input filters and limits. Apps that draw their own keyboard rather than requesting Android input may keep that custom interface.
 
+## YouTube and TizenTube search
+
+Their TV interfaces draw their own keyboards and do not request Android's selected IME. While either app is open, press the universal **Menu** button and choose **YouTube keyboard**. Luma opens its compact QWERTY/QR panel over that app. Type with the remote or phone, then press **Search** on the projector or **Go** on the phone. Results open in the same app. Cancel/Back discards the draft and returns to the app.
+
+This is a menu shortcut for search, not an automatic replacement of the apps' built-in alphabetic keyboard. It needs no additional Accessibility permission. The P6 bridge passes the foreground package; the existing optional Accessibility menu also provides this action. Only the two known YouTube TV/TizenTube packages are accepted, and the query is URL-encoded into an explicitly targeted search link. Other apps retain the normal launcher Search menu action.
 ## Phone sessions
 
 Each visible editor has a fresh random connection token and local port. Codes expire after 10 minutes. New QR code replaces the link. Hiding the keyboard, changing fields or apps, closing a Luma editor, or stopping its activity closes the old session.
@@ -35,6 +40,6 @@ Select the original System Keyboard or Android Keyboard in Android keyboard sett
 - `res/xml/luma_input_method.xml` and the manifest register the IME with Android. Only Android may bind it using BIND_INPUT_METHOD.
 - ZXing Core 3.5.3 generates QR codes locally; its Apache 2.0 license is bundled under assets/licenses.
 
-Verification: 31 JVM tests and 5 targeted projector tests passed. The integration test exercises Android input, D-pad navigation, QR text delivery, phone Go invoking Search, previous-session closure and password classification. End-to-end testing in Stremio confirmed the bottom overlay, QR scan and phone Go returning search results. Release build and lint passed with 0 errors and 52 existing warnings.
+Verification: 33 JVM tests and 5 targeted projector tests passed. The integration test exercises Android input, D-pad navigation, QR text delivery, phone Go invoking Search, previous-session closure and password classification. End-to-end testing in Stremio confirmed the bottom overlay, QR scan and phone Go returning search results. Release build and lint passed with 0 errors and 52 existing warnings.
 
 Android instrumentation force-stops its target app at completion. Launch Luma once after running device tests before checking the IME from another app; ordinary launcher usage does not involve this test-runner stop.

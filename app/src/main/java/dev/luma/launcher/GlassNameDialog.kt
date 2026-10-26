@@ -25,7 +25,7 @@ import java.util.concurrent.Executors
 
 /** Shared QWERTY editor with an optional, dialog-scoped phone typing session. */
 object GlassNameDialog {
-    fun show(activity:Activity,wallpaper:WallpaperView,prefs:Preferences,title:String,value:String,limit:Int,saved:(String)->Unit):Dialog{
+    fun show(activity:Activity,wallpaper:WallpaperView,prefs:Preferences,title:String,value:String,limit:Int,confirmLabel:String="Save",saved:(String)->Unit):Dialog{
         fun dp(value:Int)=(value*activity.resources.displayMetrics.density).toInt()
         val main=Handler(Looper.getMainLooper())
         val worker=Executors.newSingleThreadExecutor()
@@ -51,7 +51,7 @@ object GlassNameDialog {
         val keyboard=QwertyKeyboardView(activity,field,36)
         editor.addView(keyboard,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(10)})
         val buttons=LinearLayout(activity).apply{orientation=LinearLayout.HORIZONTAL}
-        val save=GlassButton(activity,wallpaper,prefs,"Save").apply{id=View.generateViewId();setOnClickListener{
+        val save=GlassButton(activity,wallpaper,prefs,confirmLabel).apply{id=View.generateViewId();setOnClickListener{
             val result=field.text.toString().replace('\n',' ').replace('\r',' ').trim()
             if(result.isNotEmpty()){dialog.dismiss();saved(result)}else field.error="Enter some text"
         }}

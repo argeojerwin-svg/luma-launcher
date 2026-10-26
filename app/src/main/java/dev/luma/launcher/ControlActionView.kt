@@ -32,7 +32,7 @@ class ControlActionView(context:Context, wallpaper:WallpaperView, prefs:Preferen
         alpha=if(subtle).82f+.18f*focusValue else .92f+.08f*focusValue
     }
     init{
-        isFocusable=true;isClickable=true;contentDescription=title
+        isFocusable=true;isFocusableInTouchMode=true;isClickable=true;contentDescription=title
         surface.background=glass;renderFocus(0f)
         addView(surface,LayoutParams(-1,-1))
         val iconSize=(if(hero)46 else if(subtle)28 else 36).dp

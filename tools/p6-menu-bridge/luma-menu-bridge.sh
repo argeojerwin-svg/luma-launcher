@@ -60,7 +60,9 @@ getevent -lt "$1" | while IFS= read -r event; do
             >>/data/local/tmp/luma-menu-action.log 2>&1
     else
         action=control_centre
+        source_package=$(printf '%s' "$focus" | sed -n 's/.*u[0-9][0-9]* \([^ /}]*\)\/.*/\1/p')
         am start -n dev.luma.launcher/.GlobalControlActivity \
+            --es source_package "$source_package" \
             >>/data/local/tmp/luma-menu-action.log 2>&1
     fi
     echo "$(date +%T) $action duration_ms=$duration" >>/data/local/tmp/luma-menu-bridge.log

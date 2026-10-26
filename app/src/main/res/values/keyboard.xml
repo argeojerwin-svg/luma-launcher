@@ -1,6 +1,7 @@
 <resources>
     <string name="luma_keyboard_name">Luma Keyboard</string>
     <string name="keyboard_go">Go</string>
+    <string name="video_search_unavailable">Could not open search in this app. Please open the app and try again.</string>
     <string name="keyboard_next">Next</string>
     <string name="keyboard_send">Send</string>
     <string name="keyboard_search">Search</string>

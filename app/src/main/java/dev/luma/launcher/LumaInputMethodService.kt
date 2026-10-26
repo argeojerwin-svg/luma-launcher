@@ -116,6 +116,7 @@ class LumaInputMethodService:InputMethodService(){
     override fun onStartInput(info:EditorInfo?,restarting:Boolean){
         stopPhone();editing=false
         super.onStartInput(info,restarting)
+        info?.packageName?.takeIf{it!=packageName}?.let{lastExternalPackage=it}
         secret=isPassword(info?.inputType?:0)
     }
     override fun onStartInputView(info:EditorInfo?,restarting:Boolean){
@@ -209,6 +210,8 @@ class LumaInputMethodService:InputMethodService(){
     override fun onKeyDown(keyCode:Int,event:KeyEvent):Boolean=handleRemote(keyCode,event)||super.onKeyDown(keyCode,event)
     override fun onKeyUp(keyCode:Int,event:KeyEvent):Boolean=handleRemote(keyCode,event)||super.onKeyUp(keyCode,event)
     companion object {
+        @Volatile var lastExternalPackage:String?=null
+            private set
         fun isPassword(type:Int):Boolean{
             val variation=type and InputType.TYPE_MASK_VARIATION
             return when(type and InputType.TYPE_MASK_CLASS){

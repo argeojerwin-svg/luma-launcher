@@ -94,10 +94,19 @@ class GlobalControlService:AccessibilityService(){
                 return super.dispatchKeyEvent(event)
             }
         }
+        val videoTarget=VideoSearchTarget.forPackage(foregroundPackage)
+        val videoAction=if(videoTarget!=null)PanelAction("YouTube keyboard"){
+            close(false)
+            startActivity(Intent(this,GlobalControlActivity::class.java).apply{
+                putExtra(GlobalControlActivity.EXTRA_SOURCE_PACKAGE,videoTarget.packageName)
+                putExtra(GlobalControlActivity.EXTRA_OPEN_KEYBOARD,true)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            })
+        }else null
         val actions=listOf(
             PanelAction("All Apps"){openLuma("all_apps")},
             PanelAction("App Switcher"){openLuma("app_switcher")},
-            PanelAction("Search"){openLuma("search")},
+            videoAction?:PanelAction("Search"){openLuma("search")},
             PanelAction("Audio settings"){openSystem(Settings.ACTION_SOUND_SETTINGS)},
             PanelAction("Wallpaper"){openLuma("wallpaper")},
             PanelAction("Start screensaver"){openLuma("screensaver")},
