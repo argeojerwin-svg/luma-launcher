@@ -1,38 +1,47 @@
 # Luma Launcher
 
-Luma is an open-source, remote-first Android TV launcher with a cinematic home screen, glass-inspired controls, an App Switcher, and Continue Watching where real provider data is available.
+**A cinematic, remote-first home screen for Android TV.** Luma brings together a refined app dock, glass-inspired controls, an App Switcher, live weather, and Continue Watching when real viewing data is available.
 
-**Current status: v1.0.0 signed release.** Device compatibility varies; see [known limitations](docs/KNOWN-LIMITATIONS.md). See [known limitations](docs/KNOWN-LIMITATIONS.md) before installing.
+[**Download the signed v1.0.0 APK**](https://github.com/smzaki101-lab/luma-launcher/releases/download/v1.0.0/Luma-v1.0.0-signed.apk) · [Release notes](https://github.com/smzaki101-lab/luma-launcher/releases/tag/v1.0.0) · [Install & recovery](docs/INSTALL.md)
 
-## Screenshots
+![Luma home screen showing the cinematic wallpaper, weather and time widgets, and app dock](screenshots/home.png)
 
-| Home | Control Centre |
-| --- | --- |
-| ![Luma home on P6](screenshots/home.png) | ![Luma Control Centre on P6](screenshots/control-centre.png) |
+## Explore Luma
 
-| App Switcher | Continue Watching |
-| --- | --- |
-| ![Luma App Switcher](screenshots/app-switcher.png) | ![Luma Continue Watching with Stremio](screenshots/continue-watching.png) |
+| Control Centre | App Switcher |
+| :--- | :--- |
+| ![Glass-inspired Control Centre with remote-friendly actions](screenshots/control-centre.png) | ![Recent apps presented as an App Switcher](screenshots/app-switcher.png) |
+| A calm, remote-friendly panel for quick actions. An optional shortcut can open it over other apps on compatible TVs. | Move between recently used apps without searching through the full library. |
 
-Screenshots were captured on the P6 during development. The App Switcher image is from an earlier beta with the same feature; appearance may vary with installed apps, wallpaper, weather and connected services. Third-party logos and title artwork belong to their respective owners.
+| Continue Watching |
+| :--- |
+| ![Continue Watching with title artwork and a cinematic background](screenshots/continue-watching.png) |
+| Browse genuine titles from supported Android TV Watch Next entries and Stremio data. Manual entries and optional Trakt support provide additional choices; progress is shown only when a source supplies it. |
 
-## What it does
+Screenshots show one tested setup. Installed apps, content, wallpaper, weather and remote behavior vary by device. The App Switcher screenshot is from an earlier beta. Third-party names, logos and title artwork belong to their owners.
 
-- D-pad navigation, editable app dock, All Apps library, custom tile rendering, and a recent-app App Switcher.
-- Home Control Centre and an optional over-app Control Centre. On compatible Android TVs, Luma's built-in Accessibility shortcut can handle the remote Menu button without a computer; see [setup and compatibility](docs/GLOBAL-MENU.md). The tested P6 needs an [optional Mac-assisted bridge](docs/P6-MENU-BRIDGE.md) because its firmware does not keep that service active.
-- Clock, Wi-Fi status, live weather with an offline cache, wallpapers and screensaver.
-- Continue Watching from supported Android TV Watch Next entries, Stremio data where available, optional Trakt, and user-managed entries. Luma only displays real progress when a source supplies it. Provider deep links and resume behavior vary.
-- Recovery options to return to Android's Home App selection. The original system launcher is never removed by Luma.
+## Highlights
 
-## Install and build
+- **Made for a remote:** D-pad navigation, animated focus, an editable dock, All Apps and app launching.
+- **Personal home screen:** custom tile identities, wallpapers, live weather with offline cache, clock and screensaver.
+- **Quick access:** Control Centre and App Switcher. The optional [global Menu shortcut](docs/GLOBAL-MENU.md) depends on the TV's remote mapping and Accessibility support.
+- **Real Continue Watching:** Android TV Watch Next and supported Stremio entries, with provider links where available. Luma never invents playback history or progress.
+- **Easy recovery:** Luma does not remove your existing launcher. Android's Home App chooser and [ADB uninstall steps](docs/INSTALL.md) remain available.
 
-See [installation and recovery](docs/INSTALL.md). To build from source, install JDK 17 and Android SDK 35, then run `./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug`. The build uses Gradle 8.9. Android Studio can also open this directory.
+## Install
 
-The application ID is `dev.luma.launcher`. No Trakt secret or account token is included in this repository. See [privacy](docs/PRIVACY.md) and [assets](docs/ASSETS.md).
+Download [Luma-v1.0.0-signed.apk](https://github.com/smzaki101-lab/luma-launcher/releases/download/v1.0.0/Luma-v1.0.0-signed.apk), then install it with an Android TV installer or ADB. Open it from your existing app list before choosing any default Home app. See the [installation guide](docs/INSTALL.md) for the upgrade note, setup and uninstall command.
 
-## Project status
+The application ID is `dev.luma.launcher`. Device compatibility beyond the original test hardware is still being established; see [known limitations](docs/KNOWN-LIMITATIONS.md). The P6-specific [Mac-assisted Menu bridge](docs/P6-MENU-BRIDGE.md) is optional and is not needed for normal Luma operation.
 
-The source is published under [Apache License 2.0](LICENSE). See [production release preparation](docs/RELEASE-PREPARATION.md) for the signing, migration, policy, and device-validation work remaining before a stable APK is released. Contributions and device reports are welcome.
+## Build from source
 
-Luma is an independent project. It is not affiliated with or endorsed by Apple, Google, Stremio or any streaming provider.
+Install JDK 17 and Android SDK 35, then run:
 
+```sh
+./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
+```
+
+The project uses Gradle 8.9 and can also be opened in Android Studio. Production signing uses local `LUMA_RELEASE_*` environment variables; the private key is not in this repository. See [release preparation](docs/RELEASE-PREPARATION.md), [privacy](docs/PRIVACY.md) and [asset attribution](docs/ASSETS.md).
+
+Luma is published under the [Apache License 2.0](LICENSE). It is an independent project and is not affiliated with Apple, Google, Stremio or any streaming provider.
