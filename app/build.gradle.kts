@@ -13,7 +13,30 @@ android {
         versionName = "1.0.0-rc1"
         testInstrumentationRunner = "android.test.InstrumentationTestRunner"
     }
-    buildTypes { release { isMinifyEnabled = false } }
+    val releaseStoreFile = providers.environmentVariable("LUMA_RELEASE_STORE_FILE").orNull
+    val releaseStorePassword = providers.environmentVariable("LUMA_RELEASE_STORE_PASSWORD").orNull
+    val releaseKeyAlias = providers.environmentVariable("LUMA_RELEASE_KEY_ALIAS").orNull
+    val releaseKeyPassword = providers.environmentVariable("LUMA_RELEASE_KEY_PASSWORD").orNull
+    val signingValues = listOf(releaseStoreFile, releaseStorePassword, releaseKeyAlias, releaseKeyPassword)
+    require(signingValues.all { it == null } || signingValues.all { !it.isNullOrBlank() }) {
+        "Set all four LUMA_RELEASE_* signing variables, or leave all four unset for an unsigned release build."
+    }
+    if (signingValues.all { !it.isNullOrBlank() }) {
+        signingConfigs {
+            create("lumaRelease") {
+                storeFile = file(requireNotNull(releaseStoreFile))
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
+    }
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            if (signingConfigs.names.contains("lumaRelease")) signingConfig = signingConfigs.getByName("lumaRelease")
+        }
+    }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     kotlinOptions { jvmTarget = "17" }
     testOptions { unitTests.isReturnDefaultValues = true }

@@ -19,7 +19,7 @@ Screenshots were captured on the P6 during development. The App Switcher image i
 ## What it does
 
 - D-pad navigation, editable app dock, All Apps library, custom tile rendering, and a recent-app App Switcher.
-- Home Control Centre and an optional over-app Control Centre. On the tested P6, the [optional Mac-assisted Menu bridge](docs/P6-MENU-BRIDGE.md) lets a short press of the original remote Menu button toggle Control Centre over apps and a hold open App Switcher while the bridge is running.
+- Home Control Centre and an optional over-app Control Centre. On compatible Android TVs, Luma's built-in Accessibility shortcut can handle the remote Menu button without a computer; see [setup and compatibility](docs/GLOBAL-MENU.md). The tested P6 needs an [optional Mac-assisted bridge](docs/P6-MENU-BRIDGE.md) because its firmware does not keep that service active.
 - Clock, Wi-Fi status, live weather with an offline cache, wallpapers and screensaver.
 - Continue Watching from supported Android TV Watch Next entries, Stremio data where available, optional Trakt, and user-managed entries. Luma only displays real progress when a source supplies it. Provider deep links and resume behavior vary.
 - Recovery options to return to Android's Home App selection. The original system launcher is never removed by Luma.
@@ -32,7 +32,7 @@ The application ID is `dev.luma.launcher`. No Trakt secret or account token is i
 
 ## Project status
 
-The source is published under [Apache License 2.0](LICENSE). This RC needs production signing, a supported upgrade path from existing debug builds, and broader device testing before a stable APK is released. Contributions and device reports are welcome.
+The source is published under [Apache License 2.0](LICENSE). See [production release preparation](docs/RELEASE-PREPARATION.md) for the signing, migration, policy, and device-validation work remaining before a stable APK is released. Contributions and device reports are welcome.
 
 Luma is an independent project. It is not affiliated with or endorsed by Apple, Google, Stremio or any streaming provider.
 
