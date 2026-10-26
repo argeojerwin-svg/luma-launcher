@@ -42,4 +42,7 @@ android {
     testOptions { unitTests.isReturnDefaultValues = true }
     lint { abortOnError = true }
 }
-dependencies { testImplementation("junit:junit:4.13.2") }
+dependencies {
+    implementation("com.google.zxing:core:3.5.3")
+    testImplementation("junit:junit:4.13.2")
+}
