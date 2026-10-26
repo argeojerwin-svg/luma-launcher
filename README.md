@@ -1,8 +1,8 @@
 # Luma Launcher
 
-Luma is an open-source, remote-first Android TV launcher with a cinematic home screen, glass-inspired controls, an App Switcher, and Continue Watching where real provider data is available. It was developed and tested primarily on the AUMI P6 projector (Android 11, 1920 × 1080, 240 dpi, 32-bit ARM, approximately 1.73 GiB RAM).
+Luma is an open-source, remote-first Android TV launcher with a cinematic home screen, glass-inspired controls, an App Switcher, and Continue Watching where real provider data is available.
 
-**Current status: v1.0.0 stable release for the tested P6.** Other Android TV models remain unverified. See [known limitations](docs/KNOWN-LIMITATIONS.md) before installing.
+**Current status: v1.0.0 signed release.** Device compatibility varies; see [known limitations](docs/KNOWN-LIMITATIONS.md). See [known limitations](docs/KNOWN-LIMITATIONS.md) before installing.
 
 ## Screenshots
 
