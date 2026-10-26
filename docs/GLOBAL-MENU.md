@@ -10,3 +10,5 @@ Luma includes an optional Android Accessibility service for its physical remote 
 The shortcut depends on the TV exposing that remote button as Android `KEYCODE_MENU`, allowing key-event filtering, and keeping the Accessibility service enabled. Android may give key filtering to only one service at a time. Some remotes have no Menu button or map it to another code. On the tested AUMI P6, the service is repeatedly disabled by firmware, so this route is not reliable there. The [P6 bridge](P6-MENU-BRIDGE.md) is a device-specific workaround, not a requirement for other TVs.
 
 Compatibility with other TV models has **not yet been verified**. Normal Luma Home, app launching, and in-launcher Control Centre do not need this optional service.
+
+For a Windows PC connected to the supported P6, see the [Windows Menu bridge](P6-MENU-BRIDGE-WINDOWS.md).
