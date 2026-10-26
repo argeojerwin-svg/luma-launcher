@@ -39,12 +39,23 @@ class LoopbackAdbTest {
         withServer({socket->
             val hello=read(socket);assertEquals(LoopbackAdb.CNXN,hello.command);assertEquals(0x01000000,hello.arg0)
             send(socket,LoopbackAdb.CNXN,0x01000000,4096,"device::\u0000")
-            val request=read(socket);assertEquals(LoopbackAdb.OPEN,request.command);assertEquals("shell:id -u\u0000",request.data)
+            val request=read(socket);assertEquals(LoopbackAdb.OPEN,request.command);assertEquals("shell,raw:id -u\u0000",request.data)
             send(socket,LoopbackAdb.OKAY,8,1)
             send(socket,LoopbackAdb.WRTE,8,1,"0\n")
             val ack=read(socket);assertEquals(LoopbackAdb.OKAY,ack.command);assertEquals(1,ack.arg0);assertEquals(8,ack.arg1)
             send(socket,LoopbackAdb.CLSE,8,1);assertEquals(LoopbackAdb.CLSE,read(socket).command)
         }){assertEquals("0\n",it.request("shell:id -u"))}
+    }
+    @Test fun completedSetupClosesWithoutWaitingForBackgroundChildren(){
+        withServer({socket->
+            read(socket);send(socket,LoopbackAdb.CNXN,0x01000000,4096,"device::\u0000")
+            read(socket);send(socket,LoopbackAdb.OKAY,8,1)
+            send(socket,LoopbackAdb.WRTE,8,1,"running\nLUMA_MENU_")
+            assertEquals(LoopbackAdb.OKAY,read(socket).command)
+            send(socket,LoopbackAdb.WRTE,8,1,"INITIALIZED")
+            assertEquals(LoopbackAdb.OKAY,read(socket).command)
+            assertEquals(LoopbackAdb.CLSE,read(socket).command)
+        }){assertEquals("running\nLUMA_MENU_INITIALIZED",it.request("shell:setup","LUMA_MENU_INITIALIZED"))}
     }
     @Test fun authenticationIsNotBypassedOrSilentlyAuthorized(){
         withServer({socket->read(socket);send(socket,LoopbackAdb.AUTH,1,0,"challenge")}){

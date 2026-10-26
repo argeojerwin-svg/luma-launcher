@@ -10,7 +10,7 @@ import java.nio.ByteOrder
 
 /** Small bounded client for this device's existing debug transport. Never connects off-device. */
 class LoopbackAdb(private val port:Int=5555){
-    fun request(service:String):String{
+    fun request(service:String,completionMarker:String?=null):String{
         require(service=="root:" || service.startsWith("shell:"))
         Socket().use{socket->
             socket.connect(InetSocketAddress("127.0.0.1",port),2000);socket.soTimeout=5000
@@ -35,7 +35,9 @@ class LoopbackAdb(private val port:Int=5555){
             val connection=read()
             if(connection.command==AUTH)throw IOException("Local debugging requires authentication; automatic setup is unavailable")
             if(connection.command!=CNXN)throw IOException("Local debugging handshake failed")
-            send(OPEN,1,0,(service+"\u0000").toByteArray(Charsets.UTF_8))
+            // A raw shell avoids keeping a terminal open in the detached IR listener.
+            val destination=if(service.startsWith("shell:"))"shell,raw:"+service.removePrefix("shell:")else service
+            send(OPEN,1,0,(destination+"\u0000").toByteArray(Charsets.UTF_8))
             var remote=0
             val output=ByteArrayOutputStream()
             val deadline=System.nanoTime()+java.util.concurrent.TimeUnit.SECONDS.toNanos(8)
@@ -48,6 +50,11 @@ class LoopbackAdb(private val port:Int=5555){
                     WRTE->{
                         if(remote==0 || output.size()+packet.payload.size>8192)throw IOException("Local debug response too large")
                         output.write(packet.payload);send(OKAY,1,remote)
+                        // P6 shells can keep the connection alive in background children.
+                        // Setup explicitly prints this marker only after its checks succeed.
+                        if(completionMarker!=null && output.toString("UTF-8").trimEnd().endsWith(completionMarker)){
+                            send(CLSE,1,remote);return output.toString("UTF-8")
+                        }
                     }
                     CLSE->{send(CLSE,1,packet.arg0);return output.toString("UTF-8")}
                     else->throw IOException("Unexpected local debug packet")

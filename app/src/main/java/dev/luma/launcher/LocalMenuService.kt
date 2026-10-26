@@ -37,7 +37,7 @@ class LocalMenuService:Service(){
                 }
                 if(!prepared)prepareListener()
                 val state=adb.request("shell:$CONTROL check").trim()
-                if(state!="running")check(adb.request("shell:$CONTROL start").trim()=="running")
+                if(state!="running")check(adb.request("shell:$CONTROL start && printf LUMA_MENU_STARTED","LUMA_MENU_STARTED").trim().endsWith("LUMA_MENU_STARTED"))
             }
             main.post{
                 if(!stopping){
@@ -45,6 +45,7 @@ class LocalMenuService:Service(){
                     if(lastReady!=ready){
                         lastReady=ready;getSystemService(NotificationManager::class.java).notify(907,notification(ready))
                         Log.i("LumaLocalMenu",if(ready)"Projector-only Menu listener is running" else "Waiting for projector-local debugging")
+                        result.exceptionOrNull()?.let{Log.w("LumaLocalMenu","Local Menu setup deferred",it)}
                     }
                     scheduleRepair(delay)
                 }
@@ -61,9 +62,9 @@ class LocalMenuService:Service(){
             append("set -e; mkdir -p $STATE; chmod 700 $STATE; ")
             append("if [ -f $STATE/luma-menu-control.sh ]; then $CONTROL stop; fi; ")
             names.forEach{name->append("cp ${quoted(File(folder,name))} $STATE/$name; chmod 700 $STATE/$name; ")}
-            append("$CONTROL start; printf initialized")
+            append("$CONTROL start; printf LUMA_MENU_INITIALIZED")
         }
-        check(adb.request("shell:$command").trim().endsWith("initialized"))
+        check(adb.request("shell:$command","LUMA_MENU_INITIALIZED").trim().endsWith("LUMA_MENU_INITIALIZED"))
         prepared=true
     }
     private fun notification(ready:Boolean):Notification{

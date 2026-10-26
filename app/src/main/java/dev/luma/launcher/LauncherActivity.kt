@@ -764,6 +764,9 @@ class LauncherActivity : Activity() {
             .any{it.resolveInfo.serviceInfo.packageName==packageName &&
                 it.resolveInfo.serviceInfo.name==GlobalControlService::class.java.name}
         val overlayAllowed=Settings.canDrawOverlays(this)
+        val shortcutHelp=if(LocalMenuService.enabled(this))
+            "Projector-only Menu is enabled. Luma restores the P6 remote shortcut after startup. Check its notification for connection status. Overlay permission is needed to show Control Centre over apps."
+        else "${if(enabled)"Shortcut listed in Android settings" else "Accessibility shortcut off"} · ${if(overlayAllowed)"Overlay allowed" else "Overlay permission needed"}. The accessibility shortcut requires both permissions. The P6 can instead use Projector-only Menu or the external bridge. Luma does not read app screen content."
         showPanel("Control Centre in apps",listOf(
             action("Projector-only Menu · ${if(LocalMenuService.enabled(this))"On" else "Off"}  ›"){
                 if(LocalMenuService.enabled(this))LocalMenuService.disable(this)
@@ -777,7 +780,7 @@ class LauncherActivity : Activity() {
             },
             action("Open Android Accessibility settings  ›"){openSettings(Settings.ACTION_ACCESSIBILITY_SETTINGS)},
             action("Back"){settings(9)}
-        ),"${if(enabled)"Shortcut listed in Android settings" else "Shortcut off"} · ${if(overlayAllowed)"Overlay allowed" else "Overlay permission needed"}. Both permissions are needed. If Menu does not respond, Android may not have attached the service. Luma does not read app screen content.",back={settings(9)})
+        ),shortcutHelp,back={settings(9)})
     }
     private fun profiles() {
         val active=preferences.profile

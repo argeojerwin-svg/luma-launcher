@@ -8,6 +8,10 @@ The scripts run from `/data/local/luma-menu`, with root-only directory permissio
 
 ## Validation at publication
 
-The release build, JVM tests (including four local ADB protocol tests), and release lint pass. The protocol tests cover stream acknowledgements, refusal of authentication challenges, malformed checksums, and oversized packets.
+The release build, all 38 JVM tests (including five local ADB protocol tests), and release lint pass. The protocol tests cover stream acknowledgements, explicit setup completion when a child keeps the connection open, refusal of authentication challenges, malformed checksums, and oversized packets.
 
-Actual projector startup, remote-button behaviour, and recovery after a full reboot are still pending. This is a draft based on PR #1; merge that tested work first. Do not describe this prototype as supported until those device checks pass. Other projector firmware may not provide the required debugging access.
+On an AUMI P6 running Android 11, a full reboot restored Luma's foreground service and IR listener automatically, with the Windows watcher stopped and Accessibility disabled. The app requested root through local debugging itself. Kernel-level short and held Menu events then opened Control Centre and App Switcher, and Control Centre opened the contextual TizenTube QWERTY/QR keyboard. These checks do not establish support on other firmware; physical-remote confirmation and longer-term use remain useful.
+
+The settings toggle stopped and restarted the service and listener cleanly. After deliberately stopping only the listener, Luma recreated it during its next recovery check without the Windows watcher.
+
+This remains a draft based on PR #1; merge that tested work first. The tested P6 already exposes root-capable, unauthenticated debugging. The helper does not enable that access on other devices. Network debugging must remain available after boot. A projector without this access still needs an external bridge or another privileged integration.
