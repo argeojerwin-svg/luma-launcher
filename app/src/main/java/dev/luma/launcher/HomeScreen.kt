@@ -167,19 +167,6 @@ class HomeScreen(context: Context, private val prefs: Preferences, private val w
     private var collection:Collection?=null
     private var collectionTransition=false
     private var currentIndex=0
-    private var homeAppsVisible=false
-    private var beforeAppsIndex=0
-    private fun revealHomeApps(from:Int){
-        val market=tileIds.indexOf("@market")
-        if(allApps || market<0)return
-        beforeAppsIndex=from;homeAppsVisible=true;tiles[market].visibility=VISIBLE
-        layoutChildren(width,height);requestLayout();tiles[market].requestFocus()
-    }
-    private fun hideHomeApps(){
-        if(allApps || !homeAppsVisible)return
-        homeAppsVisible=false;tiles.getOrNull(tileIds.indexOf("@market"))?.visibility=GONE
-        layoutChildren(width,height);requestLayout()
-    }
     private var u=1f
     private var firstY=0
     private var pitch=0
@@ -197,12 +184,13 @@ class HomeScreen(context: Context, private val prefs: Preferences, private val w
     private val outgoing=linkedMapOf<String,AppTile>()
     private var travel=emptyList<Travel>()
     private var dockFrom=1f
+    private var exitTravel=0f
     var transitioning=false;private set
     private val transition=Spring { progress ->
         val fade=progress.coerceIn(0f,1f)
         travel.forEach { t ->
             t.view.translationX=t.x*(1f-progress)
-            t.view.translationY=if(t.exiting)t.y-18*u*fade else t.y*(1f-progress)
+            t.view.translationY=if(t.exiting)t.y+exitTravel*fade else t.y*(1f-progress)
             t.view.alpha=if(t.exiting)t.alpha*(1f-fade) else t.alpha+(1f-t.alpha)*fade
         }
         dock.alpha=dockFrom+((if(allApps)0f else 1f)-dockFrom)*fade
@@ -211,7 +199,7 @@ class HomeScreen(context: Context, private val prefs: Preferences, private val w
     private fun finishTransition(){
         outgoing.values.forEach{stage.removeView(it)};outgoing.clear()
         travel=emptyList();tiles.forEach{it.translationX=0f;it.translationY=0f;it.alpha=1f;it.setLayerType(LAYER_TYPE_NONE,null)}
-        dock.visibility=if(allApps)GONE else VISIBLE;dock.alpha=1f;transitioning=false
+        dock.visibility=if(allApps || tiles.isEmpty())GONE else VISIBLE;dock.alpha=1f;transitioning=false
     }
     var moveId: String?=null
     val focusedApp: AppEntry? get()=tiles.getOrNull(currentIndex)?.item
@@ -225,7 +213,10 @@ class HomeScreen(context: Context, private val prefs: Preferences, private val w
         addView(shelf);addView(clock);addView(weather);addView(heading);addView(hint)
         clock.setOnClickListener { onControl() }
         clock.setOnKeyListener { _,key,event ->
-            if(event.action==KeyEvent.ACTION_DOWN && key==KeyEvent.KEYCODE_DPAD_DOWN) { tiles.getOrNull(currentIndex)?.requestFocus();true } else false
+            if(event.action==KeyEvent.ACTION_DOWN && key==KeyEvent.KEYCODE_DPAD_DOWN) {
+                if(tiles.isEmpty())onAllApps() else tiles.getOrNull(currentIndex)?.requestFocus()
+                true
+            } else false
         }
         clock.id=generateViewId();clock.contentDescription="Clock and Control Centre"
 
@@ -249,12 +240,12 @@ class HomeScreen(context: Context, private val prefs: Preferences, private val w
         val next=Collection(title,ids);collectionTransition=collection!=next;collection=next
         rebuild(apps,true,ids.firstOrNull()?:"@market")
     }
-    fun showLibrary(apps:List<AppEntry>,restore:String="") {collectionTransition=collection!=null;collection=null;rebuild(apps,true,restore)}
+    fun showLibrary(apps:List<AppEntry>,restore:String="") {collectionTransition=collection!=null;collection=null;rebuild(apps,true,restore,restore.isNotBlank())}
     fun showFolder(apps:List<AppEntry>,folder:AppFolder) {
         val next=Collection(folder.name,folder.members,folder.id);collectionTransition=collection!=next;collection=next
         rebuild(apps,true,folder.members.firstOrNull()?:"@market")
     }
-    fun rebuild(apps: List<AppEntry>, showAll: Boolean, restore: String=prefs.text("focus")) {
+    fun rebuild(apps: List<AppEntry>, showAll: Boolean, restore: String=prefs.text("focus"), preferRestore:Boolean=false) {
         if (prefs.text("layoutInitialized").isBlank()) {
             if (prefs.list("order").isEmpty() && prefs.list("favourites").isEmpty()) {
                 val suggested=listOf("com.apple.atve.androidtv.appletv", "com.google.android.youtube.tv", "com.netflix.ninja",
@@ -264,19 +255,20 @@ class HomeScreen(context: Context, private val prefs: Preferences, private val w
             prefs.put("layoutInitialized","1")
         }
         restoringFocus=true
+        val wasAllApps=allApps
         val changedScreen=(allApps!=showAll || collectionTransition) && tiles.isNotEmpty()
         collectionTransition=false
         if(!showAll)collection=null
-        val destination=if(collection!=null) restore else if(changedScreen)prefs.text(if(showAll)"focusLibrary" else "focusHome") else restore
+        val destination=if(collection!=null || preferRestore) restore else if(changedScreen)prefs.text(if(showAll)"focusLibrary" else "focusHome") else restore
         val old=linkedMapOf<String,AppTile>().apply{putAll(outgoing);tileIds.zip(tiles).forEach{(id,tile)->put(id,tile)}}
         val poses=old.mapValues{(_,tile)->Pose(tile.x,tile.y+scroll.top+stage.translationY,tile.alpha)}
         transition.stop();travel=emptyList();outgoing.clear();transitioning=changedScreen && prefs.motion!=0
         dockFrom=if(dock.visibility==VISIBLE)dock.alpha else 0f
+        exitTravel=if(wasAllApps && !showAll)height*.55f else -18*u
         scrollAnimation?.cancel();scrollAnimation=null;scrollOffset=0;stage.translationY=0f
         old.values.forEach{it.selected=null;it.setOnKeyListener(null)}
         ++listGeneration;loading.clear();artworkRange=Int.MIN_VALUE to Int.MIN_VALUE
         allApps=showAll
-        homeAppsVisible=false
         tiles.clear()
         fun obtain(id:String,app:AppEntry?,label:String,utility:String=""):AppTile{
             val previous=old[id]
@@ -306,24 +298,17 @@ class HomeScreen(context: Context, private val prefs: Preferences, private val w
                 tile.setOnLongClickListener { onContext(app);true }
             }
         }
-        if(!showAll) {
-            obtain("@apps",null,"All Apps","apps").also {it.setOnClickListener { onAllApps() } }
-        }
-        if(!showAll || (ordered.isEmpty() && collection==null)) {
+        if(showAll && collection==null) {
             obtain("@market",null,"Apps","market").also{
-                it.visibility=if(showAll)VISIBLE else GONE
                 it.setOnClickListener{onApps()}
             }
         }
-        tileIds=ordered.filter{it in byId || folders.any{folder->folder.tileId==it}} + if(!showAll)listOf("@apps","@market")else if(ordered.isEmpty() && collection==null)listOf("@market")else emptyList()
+        tileIds=ordered.filter{it in byId || folders.any{folder->folder.tileId==it}} + if(showAll && collection==null)listOf("@market")else emptyList()
         tiles.forEachIndexed { i,tile ->
             tile.id=generateViewId()
             tile.selected={ focused -> if(focused && !restoringFocus) {
-                if(tileIds[i]!="@market")hideHomeApps()
                 currentIndex=i
-                if(showAll || tileIds[i]!="@market"){
-                    prefs.put("focus",tileIds[i]);if(collection==null)prefs.put(if(showAll)"focusLibrary" else "focusHome",tileIds[i])
-                }
+                prefs.put("focus",tileIds[i]);if(collection==null)prefs.put(if(showAll)"focusLibrary" else "focusHome",tileIds[i])
                 onFocusApp(if(!showAll && i<6) tile.item else null)
                 if(!cinematic)shelf.show(if(!showAll && i<6)tile.item?.let{TopShelfContent.list(prefs,it.id).firstOrNull()} else null)
                 val row=i/6
@@ -338,23 +323,23 @@ class HomeScreen(context: Context, private val prefs: Preferences, private val w
             tile.setOnKeyListener { _,key,event ->
                 if(event.action!=KeyEvent.ACTION_DOWN) false
                 else if(!showAll && moveId==null && key==KeyEvent.KEYCODE_DPAD_DOWN){
-                    if(tileIds[i]!="@market")revealHomeApps(i)
+                    if(event.repeatCount==0){
+                        prefs.put("focusHome",tileIds[i])
+                        showLibrary(apps,tileIds[i])
+                    }
                     true
-                }
-                else if(!showAll && tileIds[i]=="@market" && key==KeyEvent.KEYCODE_DPAD_UP){
-                    tiles.getOrNull(beforeAppsIndex)?.requestFocus();true
                 }
                 else {
                     val delta=when(key) { KeyEvent.KEYCODE_DPAD_LEFT -> -1 to 0; KeyEvent.KEYCODE_DPAD_RIGHT -> 1 to 0
                         KeyEvent.KEYCODE_DPAD_UP -> 0 to -1;KeyEvent.KEYCODE_DPAD_DOWN -> 0 to 1;else -> null }
                     if(delta==null) false else {
-                        val count=if(!showAll && !homeAppsVisible)tiles.size-1 else tiles.size
-                        val next=GridNavigation.move(i,count,6,delta.first,delta.second)
+                        val next=GridNavigation.move(i,tiles.size,6,delta.first,delta.second)
                         if(moveId!=null){
                             if(next>=0 && next!=i && (tiles[next].item!=null || tileIds[next].startsWith("@folder:")))onMove?.invoke(moveId!!,tileIds[next])
                         }else if(next<0){
                             val app=tile.item
-                            if(app!=null && !showAll && i<6 && onCinematicContinue(app)){}
+                            if(showAll && collection==null)rebuild(apps,false)
+                            else if(app!=null && !showAll && i<6 && onCinematicContinue(app)){}
                             else if(app!=null && TopShelfContent.list(prefs,app.id).isNotEmpty())onTopShelf(app)
                             else if(app?.id=="com.stremio.one" && continueCount>0)onContinue()
                             else if(app==null && continueCount>0)onContinue()
@@ -369,16 +354,18 @@ class HomeScreen(context: Context, private val prefs: Preferences, private val w
         heading.visibility=if(showAll) VISIBLE else GONE
         heading.text=collection?.title ?: if(showAll && ordered.isEmpty())"Your library is ready" else "All Apps"
         if(showAll)shelf.show(null)
-        hint.text=if(moveId!=null) "Move with arrows · OK to save · Back to finish" else "Hold OK to arrange · Menu for Control Centre"
+        hint.text=normalHint()
         currentIndex=tileIds.indexOf(destination).coerceAtLeast(0).coerceAtMost((tiles.size-1).coerceAtLeast(0))
-        if(!showAll && tileIds.getOrNull(currentIndex)=="@market")currentIndex=0
         layoutChildren(width,height)
         if(transitioning){
             val paths=mutableListOf<Travel>()
+            val incoming=if(!wasAllApps && showAll && collection==null)
+                max(24*u,(poses.values.firstOrNull()?.y?:height*.7f)-(scroll.layoutParams as LayoutParams).topMargin-firstY)
+                else 24*u
             tiles.forEachIndexed{i,tile->
                 val pose=poses[tileIds[i]];val lp=tile.layoutParams as LayoutParams
                 paths.add(Travel(tile,(pose?.x?:lp.leftMargin.toFloat())-lp.leftMargin,
-                    if(pose!=null)pose.y-scroll.layoutParams.let{(it as LayoutParams).topMargin}-lp.topMargin else 24*u,
+                    if(pose!=null)pose.y-scroll.layoutParams.let{(it as LayoutParams).topMargin}-lp.topMargin else incoming,
                     pose?.alpha?:0f,false))
                 tile.setLayerType(LAYER_TYPE_HARDWARE,null)
             }
@@ -395,6 +382,7 @@ class HomeScreen(context: Context, private val prefs: Preferences, private val w
         post { if(generation==listGeneration){
             restoringFocus=false;currentIndex=restoreIndex
             tiles.getOrNull(restoreIndex)?.let{tile->tile.requestFocus();if(tile.hasFocus())tile.selected?.invoke(true)}
+            if(tiles.isEmpty())clock.requestFocus()
             loadVisibleArtwork()
         } }
         // Warm only the first two library rows, after visible work, without decoding on the UI thread.
@@ -428,7 +416,11 @@ class HomeScreen(context: Context, private val prefs: Preferences, private val w
             }
         }
     }
-    fun finishMove() { moveId=null;hint.text="Hold OK to arrange · Menu for Control Centre" }
+    private fun normalHint()=if(moveId!=null)"Move with arrows · OK to save · Back to finish"
+        else if(allApps && collection==null)"Up from top row for Home · Hold OK to arrange · Menu for Control Centre"
+        else if(allApps)"Hold OK to arrange · Menu for Control Centre"
+        else "Down for all apps · Hold OK to arrange · Menu for Control Centre"
+    fun finishMove() { moveId=null;hint.text=normalHint() }
     fun beginMove(id: String) { moveId=id;hint.text="Move with arrows · OK to save · Back to finish" }
     fun focusGrid() { tiles.getOrNull(currentIndex)?.requestFocus() }
     fun focusFirst() { tiles.firstOrNull()?.requestFocus() }
@@ -452,17 +444,17 @@ class HomeScreen(context: Context, private val prefs: Preferences, private val w
         u=geometry.unit;firstY=geometry.firstY;pitch=geometry.rowPitch;cellHeight=geometry.cellHeight;viewportHeight=geometry.viewportHeight
         scroll.layoutParams=LayoutParams(w,viewportHeight).apply{topMargin=geometry.viewportTop}
         scroll.clipBounds=Rect(0,0,w,viewportHeight)
-        val visibleCount=if(!allApps && !homeAppsVisible)tiles.size-1 else tiles.size
+        val visibleCount=tiles.size
         val rows=ceil(visibleCount/6f).toInt()
         if(allApps)firstY=max((20*u).toInt(),(viewportHeight-((rows-1).coerceAtLeast(0)*pitch+cellHeight))/3)
         val stageHeight=max(viewportHeight,firstY+(rows-1).coerceAtLeast(0)*pitch+cellHeight+(24*u).toInt())
         maxScroll=(stageHeight-viewportHeight).coerceAtLeast(0)
         scrollOffset=scrollOffset.coerceIn(0,maxScroll);stage.translationY=-scrollOffset.toFloat()
         stage.layoutParams=LayoutParams(w,stageHeight)
-        dock.visibility=if(allApps && !transitioning)GONE else VISIBLE
+        dock.visibility=if((allApps && !transitioning) || tiles.isEmpty())GONE else VISIBLE
         val iconInset=(geometry.cellWidth-geometry.iconWidth)/2
         val dockLeft=geometry.left+(6-min(6,visibleCount))*(geometry.cellWidth+geometry.columnGap)/2f+iconInset-24*u
-        if(!allApps || dock.layoutParams==null)dock.layoutParams=LayoutParams((w-2*dockLeft).toInt(),(geometry.iconWidth*.6f+36*u).toInt()).apply{
+        if(!allApps || dock.layoutParams==null)dock.layoutParams=LayoutParams((w-2*dockLeft).toInt().coerceAtLeast(0),(geometry.iconWidth*.6f+36*u).toInt()).apply{
             leftMargin=dockLeft.toInt();topMargin=firstY+(6*u).toInt()
         }
         tiles.forEachIndexed{i,tile->

@@ -105,7 +105,7 @@ class LauncherActivity : Activity() {
         setContentView(root)
         home.onLaunch={launch(it)};home.onContext={contextMenu(it)};home.onControl={controlCentre()}
         home.onFolderOpen={home.showFolder(installed,it)};home.onFolderContext={folderOptions(it)}
-        home.onApps={appsSection()};home.onAllApps={home.showLibrary(installed)};home.onFocusApp={app -> selectedApp=app;updateArtwork()}
+        home.onApps={appsSection(true)};home.onAllApps={home.showLibrary(installed,home.focusedId)};home.onFocusApp={app -> selectedApp=app;updateArtwork()}
         home.onMove={from,to -> moveApp(from,to)}
         home.onTopShelf={app->expandShelf(app)}
         home.onCinematicContinue={app->openCinematic(app)}
@@ -880,7 +880,7 @@ class LauncherActivity : Activity() {
         val ids=AppVisibility.dock(installed,preferences).toMutableList();val i=ids.indexOf(id);val target=i+delta
         if(i>=0 && target in ids.indices){ids.removeAt(i);ids.add(target,id);preferences.putList("dock",ids);rebuild(id)}
     }
-    private fun appsSection(){
+    private fun appsSection(returnToGrid:Boolean=false){
         val store=installed.firstOrNull{it.id=="com.android.vending"}
         showPanel("Apps",(if(store!=null)listOf(action("Open Google Play Store  ›"){closePanel(false);launch(store)})else emptyList())+listOf(
             action("Recently Used  ›"){recentApps()},
@@ -889,7 +889,7 @@ class LauncherActivity : Activity() {
             action("Hidden applications  ›"){managedApps(true)},
             action("All installed applications  ›"){managedApps(false)},
             action("Organise dock  ›"){dockManagement()}
-        ),"Discover, install and organise your apps. Google Play opens separately.",back={controlCentre()})
+        ),"Discover, install and organise your apps. Google Play opens separately.",back={if(returnToGrid)closePanel() else controlCentre()})
     }
     private fun appManagement(){
         val visible=installed.count{AppVisibility.visible(it,preferences)}
