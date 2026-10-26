@@ -28,20 +28,26 @@ class GlobalControlActivity : Activity() {
         window.setBackgroundDrawableResource(android.R.color.transparent)
         val prefs = Preferences(this)
         animateClose=prefs.motion!=0
-        val videoTarget=VideoSearchTarget.forPackage(intent.getStringExtra(EXTRA_SOURCE_PACKAGE)?:LumaInputMethodService.lastExternalPackage)
+        val sourcePackage=intent.getStringExtra(EXTRA_SOURCE_PACKAGE)?:LumaInputMethodService.lastExternalPackage
+        val videoTarget=VideoSearchTarget.forPackage(sourcePackage)
         val root=FrameLayout(this)
         setContentView(root)
         fun videoKeyboard(){
-            val target=videoTarget?:return
+            if(LumaInputMethodService.secureExternal(sourcePackage)){
+                Toast.makeText(this,"Secure fields use the app's remote keyboard",Toast.LENGTH_LONG).show();finish();return
+            }
+            val target=videoTarget
             panel=null;root.removeAllViews()
-            keyboardDialog=GlassNameDialog.show(this,WallpaperView(this),prefs,"Search ${target.label}","",256,confirmLabel="Search"){query->
-                runCatching{startActivity(Intent(Intent.ACTION_VIEW,Uri.parse(target.searchUrl(query))).apply{
+            keyboardDialog=GlassNameDialog.show(this,WallpaperView(this),prefs,
+                if(target!=null)"Search ${target.label}" else "Keyboard · open the app's search field first","",256,confirmLabel="Go"){query->
+                if(target!=null)runCatching{startActivity(Intent(Intent.ACTION_VIEW,Uri.parse(target.searchUrl(query))).apply{
                     component=ComponentName(target.packageName,target.activityName)
                 })}.onFailure{Toast.makeText(this,R.string.video_search_unavailable,Toast.LENGTH_LONG).show()}
+                else KeyboardDelivery.submit(this,sourcePackage,query)
                 finish();overridePendingTransition(0,0)
             }.apply{setOnDismissListener{keyboardDialog=null;finish();overridePendingTransition(0,0)}}
         }
-        if(intent.getBooleanExtra(EXTRA_OPEN_KEYBOARD,false) && videoTarget!=null){videoKeyboard();return}
+        if(intent.getBooleanExtra(EXTRA_OPEN_KEYBOARD,false)){videoKeyboard();return}
         fun launch(target: String) {
             finish()
             startActivity(Intent(this, LauncherActivity::class.java).apply {
@@ -53,7 +59,7 @@ class GlobalControlActivity : Activity() {
         val actions = listOf(
             PanelAction("All Apps") { launch("all_apps") },
             PanelAction("App Switcher") { launch("app_switcher") },
-            if(videoTarget!=null)PanelAction("YouTube keyboard"){videoKeyboard()}else PanelAction("Search") { launch("search") },
+            PanelAction("Keyboard"){videoKeyboard()},
             PanelAction("Audio settings") {
                 finish(); startActivity(Intent(Settings.ACTION_SOUND_SETTINGS))
             },

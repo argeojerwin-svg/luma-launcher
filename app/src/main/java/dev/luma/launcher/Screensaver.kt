@@ -15,18 +15,22 @@ class Screensaver(private val context: Context, private val root: FrameLayout, p
     fun start() {
         if(active)return
         val cover=FrameLayout(context).apply{setBackgroundColor(Color.BLACK);isFocusable=false}
-        val still=WallpaperView(context).apply {darkness=0f;zoom=1.04f;cinematicShade=false}
+        val still=WallpaperView(context).apply {darkness=0f;zoom=1f;cinematicShade=false}
         val image=wallpaper.bitmap;val frost=wallpaper.frost
         if(image!=null && frost!=null) still.show(image,frost,false)
         cover.addView(still,FrameLayout.LayoutParams(-1,-1));root.addView(cover,FrameLayout.LayoutParams(-1,-1));overlay=cover
         cover.alpha=0f;cover.animate().alpha(1f).setDuration(500).start()
-        if(prefs.motion!=0) {
+        if(prefs.number("saverMotion",if(prefs.motion==0)0 else 1)!=0) {
             var last=0L
+            val started=android.os.SystemClock.uptimeMillis()
             motion=ValueAnimator.ofFloat(0f,1f).apply {
-                duration=45000;repeatCount=ValueAnimator.INFINITE;repeatMode=ValueAnimator.REVERSE;interpolator=LinearInterpolator()
+                duration=80000;repeatCount=ValueAnimator.INFINITE;repeatMode=ValueAnimator.RESTART;interpolator=LinearInterpolator()
                 addUpdateListener {
                     val now=android.os.SystemClock.uptimeMillis()
-                    if(prefs.renderMode==0 || now-last>=32) {last=now;val f=it.animatedValue as Float;still.zoom=1.04f+f*.045f;still.drift=(f-.5f)*still.width*.025f;still.invalidate()}
+                    if(now-last>=if(prefs.renderMode==2)64 else 32) {
+                        last=now;val pose=ScreensaverMotion.pose(it.animatedValue as Float,now-started)
+                        still.zoom=pose.zoom;still.drift=pose.x*still.width;still.driftY=pose.y*still.height;still.invalidate()
+                    }
                 };start()
             }
         }

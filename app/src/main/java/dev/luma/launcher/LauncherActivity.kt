@@ -354,7 +354,7 @@ class LauncherActivity : Activity() {
         showPanel("Control Centre",listOf(
             action("All Apps") {closePanel(false);home.showLibrary(installed)},
             action("App Switcher") {appSwitcher()},
-            action("Search") {searchApps()},
+            action("Keyboard") {searchApps()},
             action("Audio settings") {openSettings(Settings.ACTION_SOUND_SETTINGS)},
             action("Wallpaper") {wallpaperMenu()},
             action("Start screensaver") {closePanel(false);saver.start()},
@@ -743,6 +743,9 @@ class LauncherActivity : Activity() {
         val selected=preferences.number("saverMinutes",5)
         showPanel("Screensaver",listOf(
             action("Start now"){closePanel(false);saver.start()},
+            action("Motion · ${if(preferences.number("saverMotion",if(preferences.motion==0)0 else 1)==0)"Still" else "Dynamic"}  ›"){
+                preferences.put("saverMotion",if(preferences.number("saverMotion",if(preferences.motion==0)0 else 1)==0)1 else 0);screensaverSettings()
+            },
             action("Idle timeout · ${if(selected==0)"Off" else "$selected minutes"}"){
                 showPanel("Idle timeout",listOf(0,1,2,5,10,20,30).map{n->action(if(n==0)"Off" else "$n minutes"){
                     preferences.put("saverMinutes",n);screensaverSettings()
@@ -1099,16 +1102,20 @@ class LauncherActivity : Activity() {
     }
     private fun pick(target: String,type: String) {
         pickTarget=target;pickProfile=preferences.profile
+        if(type.startsWith("image/")){
+            startActivityForResult(Intent(this,ImagePickerActivity::class.java),42);return
+        }
         val intent=Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType(type)
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
         try {startActivityForResult(intent,41)} catch(_:ActivityNotFoundException) {toast("No document picker is installed. Install a remote-compatible file picker or use the included landscape.")}
     }
     @Deprecated("Platform document picker compatibility") override fun onActivityResult(requestCode: Int,resultCode: Int,data: Intent?) {
         super.onActivityResult(requestCode,resultCode,data)
-        if(requestCode!=41 || resultCode!=RESULT_OK)return
-        val uri=data?.data?:return
+        if(requestCode !in listOf(41,42) || resultCode!=RESULT_OK)return
+        val uri=if(requestCode==42)data?.getStringExtra(ImagePickerActivity.EXTRA_IMAGE)?.let{Uri.parse(it)}else data?.data
+        if(uri==null)return
         try {
-            contentResolver.takePersistableUriPermission(uri,Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            if(requestCode==41)contentResolver.takePersistableUriPermission(uri,Intent.FLAG_GRANT_READ_URI_PERMISSION)
             val active=preferences.profile;preferences.profile=pickProfile;preferences.put(pickTarget,uri.toString());preferences.profile=active
             if(pickTarget.startsWith("tileArt:")){apps.clear();home.releaseArtwork();rebuild(pickTarget.removePrefix("tileArt:"))}
             loadedWallpaper="\u0000";updateArtwork();closePanel(false);toast("Saved for this profile")

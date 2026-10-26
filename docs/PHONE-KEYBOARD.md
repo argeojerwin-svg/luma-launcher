@@ -13,9 +13,15 @@ Luma's own fields still use their existing Save/Cancel behavior. Their QWERTY ed
 
 The remote keyboard includes digits, Shift, symbols, Space, Delete, cursor arrows and Clear. Client apps retain their own input filters and limits. Apps that draw their own keyboard rather than requesting Android input may keep that custom interface.
 
+## Universal Menu keyboard
+
+Open the current app's search field, press the universal **Menu** button, and choose **Keyboard**. The same compact QWERTY/QR panel is available in every app. Phone **Go** submits the composed text after returning focus to the app.
+
+For standard Android fields, Luma uses its selected input method and supports Unicode. On the P6, custom TV fields can instead receive printable English/ASCII text through the projector's existing local debugging connection. This fallback appends at the app's cursor and presses Enter; clear an existing query in the app first. It verifies the foreground package before sending text and refuses known password fields. It cannot create a text field in an app or guarantee support for every custom app interface. Prime Video and Apple TV must be on their search field before using it.
+
 ## YouTube and TizenTube search
 
-Their TV interfaces draw their own keyboards and do not request Android's selected IME. While either app is open, press the universal **Menu** button and choose **YouTube keyboard**. Luma opens its compact QWERTY/QR panel over that app. Type with the remote or phone, then press **Search** on the projector or **Go** on the phone. Results open in the same app. Cancel/Back discards the draft and returns to the app.
+Their TV interfaces draw their own keyboards and do not request Android's selected IME. While either app is open, press the universal **Menu** button and choose **Keyboard**. Luma opens its compact QWERTY/QR panel over that app. Type with the remote or phone, then press **Go**. Results open in the same app using its existing search link. Cancel/Back discards the draft and returns to the app.
 
 This is a menu shortcut for search, not an automatic replacement of the apps' built-in alphabetic keyboard. It needs no additional Accessibility permission. The P6 bridge passes the foreground package; the existing optional Accessibility menu also provides this action. Only the two known YouTube TV/TizenTube packages are accepted, and the query is URL-encoded into an explicitly targeted search link. Other apps retain the normal launcher Search menu action.
 ## Phone sessions

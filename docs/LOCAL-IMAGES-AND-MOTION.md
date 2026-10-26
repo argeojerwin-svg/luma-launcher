@@ -1,0 +1,11 @@
+# Local images and dynamic screensaver
+
+**Wallpaper → Choose local image** now opens Luma's bundled image picker. No Android document picker or extra app is required. The picker first shows photos already saved in Luma, including an existing imported wallpaper. Use **Allow access to local photos** to show the projector's media-library images, then **Refresh photos** after adding new images to Pictures or Downloads. USB photos must be indexed by the projector or copied into its shared picture folders.
+
+Use Up/Down and OK to select a thumbnail. Shared photos are copied into Luma's private image storage; the selection remains usable after a restart and after the external original is moved. JPEG, PNG and WebP are supported where Android can decode them. Imports are limited to 32 MB and decoded at a bounded resolution. The picker also serves tile-artwork choices. It changes only the profile/field that opened it.
+
+Under **Launcher settings → Screensaver**, **Motion · Dynamic** enables a slow, continuous camera pan and zoom of your selected image. A short eased introduction begins when idle mode starts; the 80-second loop has matching end positions. Image offsets are clamped inside the image edges. Performance mode reduces the animation rate. Choose **Still** to disable motion. Reduced launcher motion defaults this setting to Still unless explicitly enabled.
+
+This animates the camera over a photo. It does not reconstruct a 3D scene, animate objects in the photo, or generate Apple's aerial video footage. The same effect is used by Luma's foreground screensaver and the **Luma wallpaper** Android screensaver provider.
+
+Build validation: release build and release lint passed; 47 JVM tests passed, including shell quoting/foreground guards, bounded image copying and camera-loop continuity. On-projector verification for this build is pending while the projector is unreachable.

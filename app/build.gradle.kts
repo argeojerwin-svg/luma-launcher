@@ -9,8 +9,8 @@ android {
         applicationId = "dev.luma.launcher"
         minSdk = 23
         targetSdk = 35
-        versionCode = 47
-        versionName = "1.0.3"
+        versionCode = 48
+        versionName = "1.0.4"
         testInstrumentationRunner = "android.test.InstrumentationTestRunner"
     }
     val releaseStoreFile = providers.environmentVariable("LUMA_RELEASE_STORE_FILE").orNull

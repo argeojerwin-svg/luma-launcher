@@ -30,6 +30,21 @@ import java.util.concurrent.Executors
 
 /** The bundled Android IME: edits the app's real InputConnection without opening a launcher task. */
 class LumaInputMethodService:InputMethodService(){
+    override fun onCreate(){super.onCreate();instance=java.lang.ref.WeakReference(this)}
+    private fun acceptOverlay(source:String,text:String):Boolean{
+        if(currentInputEditorInfo?.packageName!=source || currentInputEditorInfo?.inputType==InputType.TYPE_NULL || secret)return false
+        val connection=currentInputConnection?:return false
+        val previous=snapshot()
+        connection.beginBatchEdit()
+        val accepted=try{
+            connection.finishComposingText()
+            if(previous!=null && !connection.setSelection(0,previous.length))return false
+            connection.commitText(text,1)
+        }finally{connection.endBatchEdit()}
+        if(!accepted)return false
+        if(!sendDefaultEditorAction(false))sendDownUpKeyEvents(KeyEvent.KEYCODE_ENTER)
+        requestHideSelf(0);return true
+    }
     private val main=Handler(Looper.getMainLooper())
     private val worker=Executors.newSingleThreadExecutor()
     private var generation=0
@@ -116,7 +131,7 @@ class LumaInputMethodService:InputMethodService(){
     override fun onStartInput(info:EditorInfo?,restarting:Boolean){
         stopPhone();editing=false
         super.onStartInput(info,restarting)
-        info?.packageName?.takeIf{it!=packageName}?.let{lastExternalPackage=it}
+        info?.packageName?.takeIf{it!=packageName}?.let{lastExternalPackage=it;lastExternalSecret=isPassword(info.inputType)}
         secret=isPassword(info?.inputType?:0)
     }
     override fun onStartInputView(info:EditorInfo?,restarting:Boolean){
@@ -210,6 +225,10 @@ class LumaInputMethodService:InputMethodService(){
     override fun onKeyDown(keyCode:Int,event:KeyEvent):Boolean=handleRemote(keyCode,event)||super.onKeyDown(keyCode,event)
     override fun onKeyUp(keyCode:Int,event:KeyEvent):Boolean=handleRemote(keyCode,event)||super.onKeyUp(keyCode,event)
     companion object {
+        private var instance:java.lang.ref.WeakReference<LumaInputMethodService>?=null
+        private var lastExternalSecret=false
+        fun secureExternal(source:String?)=source!=null && source==lastExternalPackage && lastExternalSecret
+        fun submitOverlay(source:String,text:String)=instance?.get()?.acceptOverlay(source,text)==true
         @Volatile var lastExternalPackage:String?=null
             private set
         fun isPassword(type:Int):Boolean{
