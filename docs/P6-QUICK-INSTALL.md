@@ -1,16 +1,18 @@
 # Install the updated Luma P6 build
 
-[Download Luma-P6-1.0.0.apk](https://github.com/argeojerwin-svg/luma-launcher/releases/download/v1.0.0-p6.1/Luma-P6-1.0.0.apk)
+[Download Luma-P6-1.0.1.apk](https://github.com/argeojerwin-svg/luma-launcher/releases/download/v1.0.1-p6.1/Luma-P6-1.0.1.apk)
 
-[Release page](https://github.com/argeojerwin-svg/luma-launcher/releases/tag/v1.0.0-p6.1) · [All source changes](https://github.com/smzaki101-lab/luma-launcher/pull/2)
+[Release page](https://github.com/argeojerwin-svg/luma-launcher/releases/tag/v1.0.1-p6.1) · [All source changes](https://github.com/smzaki101-lab/luma-launcher/pull/2)
 
 ## Install
 
-1. Download **Luma-P6-1.0.0.apk** from the link above, or from **Assets** on the release page. The source-code ZIP is for development.
+1. Download **Luma-P6-1.0.1.apk** from the link above, or from **Assets** on the release page. The source-code ZIP is for development.
 2. Open the APK on the projector using its file manager or Android TV installer. A USB drive can be used to copy the downloaded APK to the projector. Allow installation from that installer if Android asks, then choose **Install** or **Update**.
 3. Open **Luma** from your existing app list. You can try it before choosing it as the default Home app.
 
 This single APK includes the launcher, Luma keyboard, QR phone typing, phone Go, YouTube artwork and search shortcut, App Switcher fixes, and the optional P6 projector-only Menu helper. No separate Luma keyboard or bridge APK is needed.
+
+On the home screen, the separate **Apps** shortcut stays hidden until you press **Down** from a dock tile. Down reveals and selects it; **Up** returns to the previous tile and hides it again. **All Apps** stays visible. Version 1.0.1 adds this behaviour; its Down/Up, left/right, OK and return-to-Home paths were checked on the projector.
 
 ## Enable the keyboard once
 
@@ -41,4 +43,4 @@ Use the actual `.apk` file and confirm installation from that installer is permi
 - Full reboot, local listener recovery, on/off setting, short Menu, held Menu and the TizenTube QWERTY/QR shortcut were checked on the AUMI P6 running Android 11.
 - The owner confirmed short Menu, held Menu and YouTube keyboard work on the physical remote.
 
-This is a P6 preview release from the contributor fork while the changes are reviewed upstream. Other projector models and firmware have not been validated. The APK identifies itself as Luma 1.0.0, version code 44; the release tag `v1.0.0-p6.1` distinguishes this feature build.
+This is a P6 preview release from the contributor fork while the changes are reviewed upstream. Other projector models and firmware have not been validated. The APK identifies itself as Luma 1.0.1, version code 45; the release tag `v1.0.1-p6.1` distinguishes this feature build.

@@ -167,6 +167,19 @@ class HomeScreen(context: Context, private val prefs: Preferences, private val w
     private var collection:Collection?=null
     private var collectionTransition=false
     private var currentIndex=0
+    private var homeAppsVisible=false
+    private var beforeAppsIndex=0
+    private fun revealHomeApps(from:Int){
+        val market=tileIds.indexOf("@market")
+        if(allApps || market<0)return
+        beforeAppsIndex=from;homeAppsVisible=true;tiles[market].visibility=VISIBLE
+        layoutChildren(width,height);requestLayout();tiles[market].requestFocus()
+    }
+    private fun hideHomeApps(){
+        if(allApps || !homeAppsVisible)return
+        homeAppsVisible=false;tiles.getOrNull(tileIds.indexOf("@market"))?.visibility=GONE
+        layoutChildren(width,height);requestLayout()
+    }
     private var u=1f
     private var firstY=0
     private var pitch=0
@@ -263,6 +276,7 @@ class HomeScreen(context: Context, private val prefs: Preferences, private val w
         old.values.forEach{it.selected=null;it.setOnKeyListener(null)}
         ++listGeneration;loading.clear();artworkRange=Int.MIN_VALUE to Int.MIN_VALUE
         allApps=showAll
+        homeAppsVisible=false
         tiles.clear()
         fun obtain(id:String,app:AppEntry?,label:String,utility:String=""):AppTile{
             val previous=old[id]
@@ -296,13 +310,21 @@ class HomeScreen(context: Context, private val prefs: Preferences, private val w
             obtain("@apps",null,"All Apps","apps").also {it.setOnClickListener { onAllApps() } }
         }
         if(!showAll || (ordered.isEmpty() && collection==null)) {
-            obtain("@market",null,"Apps","market").also{it.setOnClickListener{onApps()}}
+            obtain("@market",null,"Apps","market").also{
+                it.visibility=if(showAll)VISIBLE else GONE
+                it.setOnClickListener{onApps()}
+            }
         }
         tileIds=ordered.filter{it in byId || folders.any{folder->folder.tileId==it}} + if(!showAll)listOf("@apps","@market")else if(ordered.isEmpty() && collection==null)listOf("@market")else emptyList()
         tiles.forEachIndexed { i,tile ->
             tile.id=generateViewId()
             tile.selected={ focused -> if(focused && !restoringFocus) {
-                currentIndex=i;prefs.put("focus",tileIds[i]);if(collection==null)prefs.put(if(showAll)"focusLibrary" else "focusHome",tileIds[i]);onFocusApp(if(!showAll && i<6) tile.item else null)
+                if(tileIds[i]!="@market")hideHomeApps()
+                currentIndex=i
+                if(showAll || tileIds[i]!="@market"){
+                    prefs.put("focus",tileIds[i]);if(collection==null)prefs.put(if(showAll)"focusLibrary" else "focusHome",tileIds[i])
+                }
+                onFocusApp(if(!showAll && i<6) tile.item else null)
                 if(!cinematic)shelf.show(if(!showAll && i<6)tile.item?.let{TopShelfContent.list(prefs,it.id).firstOrNull()} else null)
                 val row=i/6
                 val tileTop=firstY+row*pitch
@@ -315,11 +337,19 @@ class HomeScreen(context: Context, private val prefs: Preferences, private val w
             } }
             tile.setOnKeyListener { _,key,event ->
                 if(event.action!=KeyEvent.ACTION_DOWN) false
+                else if(!showAll && moveId==null && key==KeyEvent.KEYCODE_DPAD_DOWN){
+                    if(tileIds[i]!="@market")revealHomeApps(i)
+                    true
+                }
+                else if(!showAll && tileIds[i]=="@market" && key==KeyEvent.KEYCODE_DPAD_UP){
+                    tiles.getOrNull(beforeAppsIndex)?.requestFocus();true
+                }
                 else {
                     val delta=when(key) { KeyEvent.KEYCODE_DPAD_LEFT -> -1 to 0; KeyEvent.KEYCODE_DPAD_RIGHT -> 1 to 0
                         KeyEvent.KEYCODE_DPAD_UP -> 0 to -1;KeyEvent.KEYCODE_DPAD_DOWN -> 0 to 1;else -> null }
                     if(delta==null) false else {
-                        val next=GridNavigation.move(i,tiles.size,6,delta.first,delta.second)
+                        val count=if(!showAll && !homeAppsVisible)tiles.size-1 else tiles.size
+                        val next=GridNavigation.move(i,count,6,delta.first,delta.second)
                         if(moveId!=null){
                             if(next>=0 && next!=i && (tiles[next].item!=null || tileIds[next].startsWith("@folder:")))onMove?.invoke(moveId!!,tileIds[next])
                         }else if(next<0){
@@ -341,6 +371,7 @@ class HomeScreen(context: Context, private val prefs: Preferences, private val w
         if(showAll)shelf.show(null)
         hint.text=if(moveId!=null) "Move with arrows · OK to save · Back to finish" else "Hold OK to arrange · Menu for Control Centre"
         currentIndex=tileIds.indexOf(destination).coerceAtLeast(0).coerceAtMost((tiles.size-1).coerceAtLeast(0))
+        if(!showAll && tileIds.getOrNull(currentIndex)=="@market")currentIndex=0
         layoutChildren(width,height)
         if(transitioning){
             val paths=mutableListOf<Travel>()
@@ -421,7 +452,8 @@ class HomeScreen(context: Context, private val prefs: Preferences, private val w
         u=geometry.unit;firstY=geometry.firstY;pitch=geometry.rowPitch;cellHeight=geometry.cellHeight;viewportHeight=geometry.viewportHeight
         scroll.layoutParams=LayoutParams(w,viewportHeight).apply{topMargin=geometry.viewportTop}
         scroll.clipBounds=Rect(0,0,w,viewportHeight)
-        val rows=ceil(tiles.size/6f).toInt()
+        val visibleCount=if(!allApps && !homeAppsVisible)tiles.size-1 else tiles.size
+        val rows=ceil(visibleCount/6f).toInt()
         if(allApps)firstY=max((20*u).toInt(),(viewportHeight-((rows-1).coerceAtLeast(0)*pitch+cellHeight))/3)
         val stageHeight=max(viewportHeight,firstY+(rows-1).coerceAtLeast(0)*pitch+cellHeight+(24*u).toInt())
         maxScroll=(stageHeight-viewportHeight).coerceAtLeast(0)
@@ -429,14 +461,14 @@ class HomeScreen(context: Context, private val prefs: Preferences, private val w
         stage.layoutParams=LayoutParams(w,stageHeight)
         dock.visibility=if(allApps && !transitioning)GONE else VISIBLE
         val iconInset=(geometry.cellWidth-geometry.iconWidth)/2
-        val dockLeft=geometry.left+(6-min(6,tiles.size))*(geometry.cellWidth+geometry.columnGap)/2f+iconInset-24*u
+        val dockLeft=geometry.left+(6-min(6,visibleCount))*(geometry.cellWidth+geometry.columnGap)/2f+iconInset-24*u
         if(!allApps || dock.layoutParams==null)dock.layoutParams=LayoutParams((w-2*dockLeft).toInt(),(geometry.iconWidth*.6f+36*u).toInt()).apply{
             leftMargin=dockLeft.toInt();topMargin=firstY+(6*u).toInt()
         }
         tiles.forEachIndexed{i,tile->
             tile.configure(geometry.iconWidth,u)
             tile.layoutParams=LayoutParams(geometry.cellWidth,cellHeight).apply{
-                leftMargin=(geometry.left+(6-min(6,tiles.size-(i/6)*6))*(geometry.cellWidth+geometry.columnGap)/2f+(i%6)*(geometry.cellWidth+geometry.columnGap)).toInt();topMargin=firstY+(i/6)*pitch
+                leftMargin=(geometry.left+(6-min(6,visibleCount-(i/6)*6))*(geometry.cellWidth+geometry.columnGap)/2f+(i%6)*(geometry.cellWidth+geometry.columnGap)).toInt();topMargin=firstY+(i/6)*pitch
             }
         }
         clock.layoutParams=LayoutParams((277*u).toInt(),(76*u).toInt()).apply{
