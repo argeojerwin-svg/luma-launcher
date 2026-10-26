@@ -91,6 +91,7 @@ class LauncherActivity : Activity() {
     }
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
+        LocalMenuService.resumeIfEnabled(this)
         if(intent?.action==ACTION_GLOBAL_CONTROL)pendingGlobalTarget=intent.getStringExtra(EXTRA_GLOBAL_TARGET)
         window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
         immersive()
@@ -174,6 +175,7 @@ class LauncherActivity : Activity() {
             "wallpaper"->wallpaperMenu()
             "screensaver"->saver.start()
             "more"->moreControls()
+            "global_menu_settings"->globalControlSettings()
         }
     }
     @Suppress("DEPRECATION") private fun immersive() {
@@ -763,6 +765,11 @@ class LauncherActivity : Activity() {
                 it.resolveInfo.serviceInfo.name==GlobalControlService::class.java.name}
         val overlayAllowed=Settings.canDrawOverlays(this)
         showPanel("Control Centre in apps",listOf(
+            action("Projector-only Menu · ${if(LocalMenuService.enabled(this))"On" else "Off"}  ›"){
+                if(LocalMenuService.enabled(this))LocalMenuService.disable(this)
+                else LocalMenuService.enable(this)
+                main.postDelayed({globalControlSettings()},300)
+            },
             action("Display over other apps · ${if(overlayAllowed)"Allowed" else "Allow"}  ›"){
                 val intent=Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                     android.net.Uri.parse("package:$packageName"))

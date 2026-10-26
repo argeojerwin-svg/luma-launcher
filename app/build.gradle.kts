@@ -46,3 +46,16 @@ dependencies {
     implementation("com.google.zxing:core:3.5.3")
     testImplementation("junit:junit:4.13.2")
 }
+
+val localMenuAssets = layout.buildDirectory.dir("generated/localMenuAssets")
+val bundleLocalMenu by tasks.registering {
+    val names = listOf("luma-menu-bridge.sh", "luma-menu-control.sh")
+    inputs.files(names.map { rootProject.file("tools/p6-menu-bridge/$it") })
+    outputs.dir(localMenuAssets)
+    doLast {
+        val folder = localMenuAssets.get().dir("p6-menu-bridge").asFile.apply { mkdirs() }
+        names.forEach { name -> folder.resolve(name).writeText(rootProject.file("tools/p6-menu-bridge/$name").readText().replace("\r\n", "\n")) }
+    }
+}
+android.sourceSets.getByName("main").assets.srcDir(localMenuAssets)
+tasks.named("preBuild").configure { dependsOn(bundleLocalMenu) }
