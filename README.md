@@ -8,7 +8,7 @@ This P6 build includes the QWERTY/QR phone keyboard, phone Go, YouTube/TizenTube
 
 ![Luma home screen showing the cinematic wallpaper, weather and time widgets, and app dock](screenshots/home.png)
 
-**1.0.4 preview:** adds **Menu → Keyboard** for every app, a bundled local photo picker, and continuous wallpaper screensaver motion. The signed release build, release lint and 47 tests pass; projector verification is pending because the device is offline. [Last projector-tested build (1.0.3)](https://github.com/argeojerwin-svg/luma-launcher/releases/tag/v1.0.3-p6.1). See [keyboard support](docs/PHONE-KEYBOARD.md) and [images and motion](docs/LOCAL-IMAGES-AND-MOTION.md).
+**1.0.4 preview:** adds **Menu → Keyboard** for every app, a bundled local photo picker, and continuous wallpaper screensaver motion. The signed release build, release lint and 47 tests pass. On the P6, the picker imported a local photo, screensaver frames changed over time, and QR/phone Go opened Stremio search results. Individual custom app interfaces such as Prime Video and Apple TV remain unverified. [Previous build (1.0.3)](https://github.com/argeojerwin-svg/luma-launcher/releases/tag/v1.0.3-p6.1). See [keyboard support](docs/PHONE-KEYBOARD.md) and [images and motion](docs/LOCAL-IMAGES-AND-MOTION.md).
 
 ## Explore Luma
 

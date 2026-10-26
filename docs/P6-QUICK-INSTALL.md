@@ -1,6 +1,6 @@
 # Install the updated Luma P6 build
 
-**1.0.4 preview:** the release build, release lint and 47 JVM tests passed. The projector is currently unreachable, so this version's new features have not yet been verified on hardware. The previous 1.0.3 remains available on the release page for recovery.
+**1.0.4 preview:** the release build, release lint and 47 JVM tests passed. The local image picker, dynamic screensaver updates and universal Keyboard's QR/phone Go path in Stremio were checked on the P6. Individual custom app search interfaces remain unverified. The previous 1.0.3 remains available on the release page for recovery.
 
 [Download Luma-P6-1.0.4.apk](https://github.com/argeojerwin-svg/luma-launcher/releases/download/v1.0.4-p6.1/Luma-P6-1.0.4.apk)
 
@@ -55,7 +55,7 @@ Use the actual `.apk` file and confirm installation from that installer is permi
 
 - APK signature verified against the established Luma release certificate.
 - The public download is checked byte-for-byte against the locally signed APK.
-- For 1.0.4, release build and release lint passed; all 47 JVM tests passed. Installation and new-feature checks on the P6 are pending.
+- For 1.0.4, release build and release lint passed; all 47 JVM tests passed. The update was installed on the P6, a shared photo was imported and selected, the dynamic screensaver updated over time, and QR/phone Go through the universal overlay opened Stremio search results.
 - Full reboot, local listener recovery, on/off setting, short Menu, held Menu and the TizenTube QWERTY/QR shortcut were checked on the AUMI P6 running Android 11.
 - The owner confirmed short Menu, held Menu and YouTube keyboard work on the physical remote.
 
