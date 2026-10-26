@@ -1,6 +1,6 @@
 # Luma Launcher
 
-**A cinematic, remote-first home screen for Android TV.** Luma brings together a refined app dock, glass-inspired controls, an App Switcher, live weather, and Continue Watching when real viewing data is available.
+**A cinematic, tvOS-inspired home screen for Android TV.** Luma brings a Liquid Glass-inspired UI to your TV: a refined app dock, translucent Control Centre, fluid remote focus, App Switcher, live weather, and Continue Watching when real viewing data is available.
 
 [**Download the signed v1.0.0 APK**](https://github.com/smzaki101-lab/luma-launcher/releases/download/v1.0.0/Luma-v1.0.0-signed.apk) · [Release notes](https://github.com/smzaki101-lab/luma-launcher/releases/tag/v1.0.0) · [Install & recovery](docs/INSTALL.md)
 
@@ -24,6 +24,7 @@ Screenshots show one tested setup. Installed apps, content, wallpaper, weather a
 
 - **Made for a remote:** D-pad navigation, animated focus, an editable dock, All Apps and app launching.
 - **Personal home screen:** custom tile identities, wallpapers, live weather with offline cache, clock and screensaver.
+- **Liquid Glass-inspired design:** layered translucency, soft highlights and restrained motion inspired by the visual direction of tvOS 26, tuned for Android TV hardware.
 - **Quick access:** Control Centre and App Switcher. The optional [global Menu shortcut](docs/GLOBAL-MENU.md) depends on the TV's remote mapping and Accessibility support.
 - **Real Continue Watching:** Android TV Watch Next and supported Stremio entries, with provider links where available. Luma never invents playback history or progress.
 - **Easy recovery:** Luma does not remove your existing launcher. Android's Home App chooser and [ADB uninstall steps](docs/INSTALL.md) remain available.
@@ -44,4 +45,4 @@ Install JDK 17 and Android SDK 35, then run:
 
 The project uses Gradle 8.9 and can also be opened in Android Studio. Production signing uses local `LUMA_RELEASE_*` environment variables; the private key is not in this repository. See [release preparation](docs/RELEASE-PREPARATION.md), [privacy](docs/PRIVACY.md) and [asset attribution](docs/ASSETS.md).
 
-Luma is published under the [Apache License 2.0](LICENSE). It is an independent project and is not affiliated with Apple, Google, Stremio or any streaming provider.
+Luma is published under the [Apache License 2.0](LICENSE). “Liquid Glass” and “tvOS 26” describe the design inspiration, not the origin of this app. Luma is independent and is not affiliated with or endorsed by Apple, Google, Stremio or any streaming provider.
