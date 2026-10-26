@@ -237,6 +237,7 @@ class LauncherActivity : Activity() {
     }
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if(event.keyCode==KeyEvent.KEYCODE_HOME)return super.dispatchKeyEvent(event)
+        if(panel==null && switcher?.handleKeyEvent(event)==true)return true
         if(event.keyCode==KeyEvent.KEYCODE_APP_SWITCH){if(event.action==KeyEvent.ACTION_UP && switcher==null)appSwitcher();return true}
         if(event.keyCode==suppressWakeKey) {if(event.action==KeyEvent.ACTION_UP)suppressWakeKey=-1;return true}
         if(saver.active && event.action==KeyEvent.ACTION_DOWN) {saver.stop();suppressWakeKey=event.keyCode;resetInactivity();return true}
@@ -347,6 +348,7 @@ class LauncherActivity : Activity() {
     }
     private fun action(title: String, block: ()->Unit)=PanelAction(title,block)
     private fun controlCentre(focus:Int=0) {
+        if(switcher!=null)closeSwitcher(false)
         showPanel("Control Centre",listOf(
             action("All Apps") {closePanel(false);home.showLibrary(installed)},
             action("App Switcher") {appSwitcher()},

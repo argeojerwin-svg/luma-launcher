@@ -12,6 +12,7 @@ object BrandedTileArtwork {
         val p=Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG).apply{isDither=true}
         var sourceBanner=false
         if(app.id=="com.android.vending" && refined)marketplace(c,p)
+        else if(app.id=="io.gh.reisxd.tizentube.cobalt" && refined)youtube(c,p)
         else {
             val banner=runCatching{pm.getActivityBanner(app.component)?:pm.getApplicationBanner(app.id)}.getOrNull()
             sourceBanner=banner!=null
@@ -60,6 +61,13 @@ object BrandedTileArtwork {
                 channel(center,left,right,up,down,8),channel(center,left,right,up,down,0))
         }
         bitmap.setPixels(dst,0,width,0,0,width,height)
+    }
+    private fun youtube(c:Canvas,p:Paint){
+        c.drawColor(0xFFFAFAFA.toInt())
+        p.color=0xFFFF0033.toInt()
+        c.drawRoundRect(RectF(96f,51f,224f,141f),20f,20f,p)
+        p.color=Color.WHITE
+        c.drawPath(Path().apply{moveTo(147f,74f);lineTo(147f,118f);lineTo(184f,96f);close()},p)
     }
     private fun marketplace(c:Canvas,p:Paint){
         p.shader=LinearGradient(20f,0f,300f,192f,intArrayOf(0xFF29B9F4.toInt(),0xFF177AE7.toInt(),0xFF254ED6.toInt()),null,Shader.TileMode.CLAMP)
