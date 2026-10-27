@@ -736,8 +736,10 @@ class LauncherActivity : Activity() {
         showPanel("Wallpaper",listOf(
             action("Choose local image or video  ›"){pick("wallpaper","image/*")},
             action("Use included Fjord landscape"){preferences.put("wallpaper","");preferences.put("video","");loadedWallpaper="\u0000";updateArtwork();closePanel()},
+            action("Use Blue Hour Coast"){preferences.put("wallpaper","builtin:blue_hour_coast");preferences.put("video","");loadedWallpaper="\u0000";updateArtwork();closePanel()},
+            action("Use Midnight Fjord"){preferences.put("wallpaper","builtin:midnight_fjord");preferences.put("video","");loadedWallpaper="\u0000";updateArtwork();closePanel()},
             action("Back"){controlCentre()}
-        ),"Choose a photo, or a video with a still wallpaper frame and playback during screensaver. App artwork can override the first row.",back={controlCentre()})
+        ),"Choose an included wallpaper, local photo, or video with screensaver playback. App artwork can override the first row.",back={controlCentre()})
     }
     private fun screensaverSettings() {
         val selected=preferences.number("saverMinutes",5)

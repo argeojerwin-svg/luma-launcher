@@ -45,7 +45,12 @@ internal object KeyboardTextCommand {
         val typing=pieces.mapIndexed{index,part->
             (if(index>0)"input text '%'; " else "")+(if(part.isNotEmpty())"input text ${quote(part)}; " else "")
         }.joinToString("")
+        // Apple TV's custom Search keyboard needs its previous query cleared and
+        // updates results as text arrives. Enter would select the first result.
+        val appleSearch=source=="com.apple.atve.androidtv.appletv"
+        val clear=if(appleSearch)"i=0; while [ \$i -lt 100 ]; do input keyevent 67; i=\$((i+1)); done; " else ""
+        val submit=if(appleSearch)"" else "input keyevent 66; "
         return "focus=\$(dumpsys window 2>/dev/null | grep mCurrentFocus); case \"\$focus\" in *\" $source/\"*) "+
-            typing+"input keyevent 66; printf LUMA_INPUT_DONE ;; *) printf APP_CHANGED ;; esac"
+            clear+typing+submit+"printf LUMA_INPUT_DONE ;; *) printf APP_CHANGED ;; esac"
     }
 }

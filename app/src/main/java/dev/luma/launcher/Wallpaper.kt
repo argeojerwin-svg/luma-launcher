@@ -31,8 +31,12 @@ class WallpaperRepository(private val context: Context) {
         }
     }
     private fun decode(uri: String, maxEdge: Int): Bitmap {
-        fun stream() = if (uri.isBlank()) context.resources.openRawResource(R.raw.fjord)
-            else context.contentResolver.openInputStream(Uri.parse(uri)) ?: error("Image unavailable")
+        fun stream() = when (uri) {
+            "" -> context.resources.openRawResource(R.raw.fjord)
+            "builtin:blue_hour_coast" -> context.resources.openRawResource(R.raw.blue_hour_coast)
+            "builtin:midnight_fjord" -> context.resources.openRawResource(R.raw.midnight_fjord)
+            else -> context.contentResolver.openInputStream(Uri.parse(uri)) ?: error("Image unavailable")
+        }
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         stream().use { BitmapFactory.decodeStream(it, null, bounds) }
         require(bounds.outWidth > 0 && bounds.outHeight > 0)

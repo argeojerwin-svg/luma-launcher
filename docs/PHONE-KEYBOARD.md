@@ -17,7 +17,7 @@ The remote keyboard includes digits, Shift, symbols, Space, Delete, cursor arrow
 
 Open the current app's search field, press the universal **Menu** button, and choose **Keyboard**. The same compact QWERTY/QR panel is available in every app. Phone **Go** submits the composed text after returning focus to the app.
 
-For standard Android fields, Luma uses its selected input method and supports Unicode. On the P6, custom TV fields can instead receive printable English/ASCII text through the projector's existing local debugging connection. This fallback appends at the app's cursor and presses Enter; clear an existing query in the app first. It verifies the foreground package before sending text and refuses known password fields. It cannot create a text field in an app or guarantee support for every custom app interface. Apple TV and other custom interfaces remain app-dependent; Prime Video uses the direct search link below.
+For standard Android fields, Luma uses its selected input method and supports Unicode. On devices with a working local debugging connection, custom TV fields can instead receive printable English/ASCII text. This fallback verifies the foreground package before sending text and refuses known password fields. It cannot create a text field in an app or guarantee support for every custom interface. Usually it appends at the cursor and presses Enter, so clear an existing query first. Apple TV's Search screen is handled specially: Luma clears the old query, enters the new text, and does not press Enter, which would select a result. Prime Video uses the direct search link below.
 
 ## Prime Video search
 

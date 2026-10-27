@@ -8,7 +8,7 @@ This P6 build includes the QWERTY/QR phone keyboard, phone Go, YouTube/TizenTube
 
 ![Luma home screen showing the cinematic wallpaper, weather and time widgets, and app dock](screenshots/home.png)
 
-**1.0.10 preview:** adds Wi-Fi password Save/Paste/Change/Forget for new users, video wallpapers with silent looping screensaver playback, and Prime Video overlay search. Release build, lint and 51 JVM tests pass. Focused P6 tests cover Wi-Fi save/paste/cancel/forget, Prime and Stremio phone Go, photo import, and the Sunrise video wallpaper/screensaver. Apple TV remains unverified. See [keyboard support](docs/PHONE-KEYBOARD.md) and [images and motion](docs/LOCAL-IMAGES-AND-MOTION.md).
+**1.0.10 preview:** adds Wi-Fi password Save/Paste/Change/Forget for new users, video wallpapers with silent looping screensaver playback, Prime Video overlay search, Apple TV custom Search text support, and two original darker wallpapers. Apple TV search requires the app's Search screen and a working device-local Menu input connection. See [keyboard support](docs/PHONE-KEYBOARD.md) and [images and motion](docs/LOCAL-IMAGES-AND-MOTION.md).
 
 ## Explore Luma
 

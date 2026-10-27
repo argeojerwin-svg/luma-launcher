@@ -81,16 +81,27 @@ class PhoneTextSession(
             if(headers.put(key,line.substring(split+1).trim())!=null){reply(socket,400,"Duplicate header");return}
         }
         if(!isOpen){reply(socket,410,"This code has expired");return}
-        if(headers["host"]!=origin.removePrefix("http://")){reply(socket,403,"Host not allowed");return}
         val method=request[0];val path=request[1]
+        // Consume a bounded rejected POST body before closing the socket. Otherwise the TCP
+        // connection can reset and the phone never receives the useful 403 response.
+        fun reject(message:String){
+            val length=headers["content-length"]?.toIntOrNull()
+            if(method=="POST" && length!=null && length in 0..limit*4){
+                var remaining=length
+                val buffer=ByteArray(1024)
+                while(remaining>0){val count=input.read(buffer,0,minOf(buffer.size,remaining));if(count<0)break;remaining-=count}
+            }
+            reply(socket,403,message)
+        }
+        if(headers["host"]!=origin.removePrefix("http://")){reject("Host not allowed");return}
         if(method=="GET" && path=="/"){
             reply(socket,200,page.replace("__CSP_NONCE__",nonce),"text/html; charset=utf-8");return
         }
         val supplied=headers["x-luma-token"]?:""
         if(!MessageDigest.isEqual(token.toByteArray(Charsets.UTF_8),supplied.toByteArray(Charsets.UTF_8))){
-            reply(socket,403,"Scan the current QR code on your TV");return
+            reject("Scan the current QR code on your TV");return
         }
-        if(headers["origin"]!=null && headers["origin"]!=origin){reply(socket,403,"Origin not allowed");return}
+        if(headers["origin"]!=null && headers["origin"]!=origin){reject("Origin not allowed");return}
         if(method=="GET" && path=="/state"){
             reply(socket,200,"{\"title\":${json(title)},\"limit\":$limit,\"text\":${json(text)}}","application/json; charset=utf-8");return
         }

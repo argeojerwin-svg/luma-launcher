@@ -17,6 +17,12 @@ class KeyboardTextCommandTest {
         val command=KeyboardTextCommand.build("com.example.tv","100%s")
         assertTrue(command.contains("input text '100'; input text '%'; input text 's'"))
     }
+    @Test fun appleTvSearchClearsOldQueryWithoutSelectingAResult(){
+        val command=KeyboardTextCommand.build("com.apple.atve.androidtv.appletv","Silo")
+        assertTrue(command.contains("input keyevent 67"))
+        assertTrue(command.contains("input text 'Silo'"))
+        assertFalse(command.contains("input keyevent 66"))
+    }
     @Test fun rejectsUnexpectedDestinationsAndUnsupportedFallbackText(){
         assertThrows(IllegalArgumentException::class.java){KeyboardTextCommand.build("x;id","test")}
         assertThrows(IllegalArgumentException::class.java){KeyboardTextCommand.build("com.example","café")}
