@@ -3,6 +3,11 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class KeyboardTextCommandTest {
+    @Test fun statusIgnoresDiagnosticOutputButRejectsChangedApp(){
+        assertTrue(KeyboardTextCommand.succeeded("diagnostic\nLUMA_INPUT_DONE\r\n"))
+        assertFalse(KeyboardTextCommand.succeeded("APP_CHANGED"))
+        assertFalse(KeyboardTextCommand.succeeded("LUMA_INPUT_DONE\nAPP_CHANGED"))
+    }
     @Test fun quotesShellMetacharacters(){
         val command=KeyboardTextCommand.build("com.example.tv","it's \$(id); `id`")
         assertTrue(command.contains("'it'\\''s \$(id); `id`'"))

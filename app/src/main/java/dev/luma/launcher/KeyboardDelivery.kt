@@ -20,14 +20,14 @@ object KeyboardDelivery {
             worker.execute{
                 val result=runCatching{
                     val command=KeyboardTextCommand.build(source,text)
-                    check(LoopbackAdb().request("shell:$command").trim()=="LUMA_INPUT_DONE"){
-                        "Open the app's search field and try Keyboard again"
-                    }
+                    val response=LoopbackAdb().request("shell:$command")
+                    check(KeyboardTextCommand.succeeded(response)){"APP_CHANGED"}
                 }
-                main.post{result.onFailure{
+                main.post{result.onFailure{failure->
                     Toast.makeText(app,if(text.any{it.code !in 32..126})
                         "These characters need the app's Android text field and Luma Keyboard"
-                        else "Open the app's search field and enable Projector-only Menu, then try again",Toast.LENGTH_LONG).show()
+                        else if(failure.message=="APP_CHANGED")"Return to the app's search field and open Keyboard again"
+                        else "Could not send text. Check Projector-only Menu in Luma settings",Toast.LENGTH_LONG).show()
                 }}
             }
         },450)
@@ -35,6 +35,7 @@ object KeyboardDelivery {
 }
 
 internal object KeyboardTextCommand {
+    fun succeeded(response:String)=response.trimEnd().endsWith("LUMA_INPUT_DONE")
     private fun quote(value:String)="'"+value.replace("'","'\\''")+"'"
     fun build(source:String,text:String):String{
         require(source.matches(Regex("[A-Za-z0-9_.]+")))
@@ -44,7 +45,7 @@ internal object KeyboardTextCommand {
         val typing=pieces.mapIndexed{index,part->
             (if(index>0)"input text '%'; " else "")+(if(part.isNotEmpty())"input text ${quote(part)}; " else "")
         }.joinToString("")
-        return "focus=\$(dumpsys window | grep -m 1 mCurrentFocus); case \"\$focus\" in *\" $source/\"*) "+
+        return "focus=\$(dumpsys window 2>/dev/null | grep mCurrentFocus); case \"\$focus\" in *\" $source/\"*) "+
             typing+"input keyevent 66; printf LUMA_INPUT_DONE ;; *) printf APP_CHANGED ;; esac"
     }
 }

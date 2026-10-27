@@ -57,6 +57,15 @@ class LumaInputMethodService:InputMethodService(){
     private lateinit var qr:ImageView
     private lateinit var status:TextView
     private lateinit var go:TextView
+    private lateinit var hide:TextView
+    private lateinit var wifiPaste:TextView
+    private lateinit var wifiChange:TextView
+    private lateinit var wifiForget:TextView
+    private lateinit var phoneTitle:TextView
+    private lateinit var phoneRefresh:TextView
+    private var wifiDraft:String?=null
+    private var wifiCursor=0
+    private var wifiField=false
     private var secret=false
     private fun dp(value:Int)=(value*resources.displayMetrics.density).toInt()
     private fun label(value:String,size:Float=13f)=TextView(this).apply{text=value;textSize=size;setTextColor(0xFFE1ECFC.toInt())}
@@ -91,26 +100,56 @@ class LumaInputMethodService:InputMethodService(){
         }
         editor.addView(preview,LinearLayout.LayoutParams(-1,dp(36)).apply{topMargin=dp(6)})
         keyboard=QwertyKeyboardView(this,preview,36,object:QwertyKeyboardView.Actions{
-            override fun insert(value:String){currentInputConnection?.commitText(value,1);refreshPreview()}
-            override fun delete(){sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL);refreshPreview()}
-            override fun move(direction:Int){sendDownUpKeyEvents(if(direction<0)KeyEvent.KEYCODE_DPAD_LEFT else KeyEvent.KEYCODE_DPAD_RIGHT);refreshPreview()}
-            override fun clear(){currentInputConnection?.let{if(it.performContextMenuAction(android.R.id.selectAll))it.commitText("",1)};refreshPreview()}
+            override fun insert(value:String){
+                val draft=wifiDraft
+                if(draft!=null){if(draft.length+value.length<=64){wifiDraft=draft.substring(0,wifiCursor)+value+draft.substring(wifiCursor);wifiCursor+=value.length}}
+                else currentInputConnection?.commitText(value,1)
+                refreshPreview()
+            }
+            override fun delete(){
+                val draft=wifiDraft
+                if(draft!=null){if(wifiCursor>0){wifiDraft=draft.removeRange(wifiCursor-1,wifiCursor);wifiCursor--}}
+                else sendDownUpKeyEvents(KeyEvent.KEYCODE_DEL)
+                refreshPreview()
+            }
+            override fun move(direction:Int){
+                if(wifiDraft!=null)wifiCursor=(wifiCursor+direction).coerceIn(0,wifiDraft!!.length)
+                else sendDownUpKeyEvents(if(direction<0)KeyEvent.KEYCODE_DPAD_LEFT else KeyEvent.KEYCODE_DPAD_RIGHT)
+                refreshPreview()
+            }
+            override fun clear(){
+                if(wifiDraft!=null){wifiDraft="";wifiCursor=0}
+                else currentInputConnection?.let{if(it.performContextMenuAction(android.R.id.selectAll))it.commitText("",1)}
+                refreshPreview()
+            }
         })
         editor.addView(keyboard,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(6)})
         val buttons=LinearLayout(this)
+        wifiPaste=button("Save Wi-Fi password"){
+            if(wifiDraft!=null){wifiDraft=null;updateWifiControls();refreshPreview()}
+            else if(savedWifiPassword()!=null)pasteWifiPassword()else editWifiPassword()
+        }.apply{visibility=View.GONE}
+        buttons.addView(wifiPaste,LinearLayout.LayoutParams(0,dp(38),1.5f).apply{rightMargin=dp(8)})
         go=button("Go"){confirm()}
-        val hide=button("Close"){requestHideSelf(0)}
+        hide=button("Close"){requestHideSelf(0)}
         buttons.addView(go,LinearLayout.LayoutParams(0,dp(38),1f));buttons.addView(hide,LinearLayout.LayoutParams(0,dp(38),1f).apply{leftMargin=dp(8)})
         editor.addView(buttons,LinearLayout.LayoutParams(-1,-2).apply{topMargin=dp(6)})
         card.addView(editor,LinearLayout.LayoutParams(0,-2,1f))
         val phone=LinearLayout(this).apply{orientation=LinearLayout.VERTICAL;gravity=Gravity.CENTER_HORIZONTAL;setPadding(dp(16),0,0,0)}
-        phone.addView(label("Type on your phone",16f))
+        phoneTitle=label("Type on your phone",16f);phone.addView(phoneTitle)
         qr=ImageView(this).apply{contentDescription="Scan to type on your phone";setBackgroundColor(Color.WHITE);setPadding(dp(5),dp(5),dp(5),dp(5));visibility=View.INVISIBLE}
         phone.addView(qr,LinearLayout.LayoutParams(dp(164),dp(164)).apply{topMargin=dp(8)})
         status=label("Preparing QR code…").apply{gravity=Gravity.CENTER;minHeight=dp(58)}
         phone.addView(status,LinearLayout.LayoutParams(-1,-2))
         val refresh=button("New QR code"){startPhone()}
+        phoneRefresh=refresh
         phone.addView(refresh,LinearLayout.LayoutParams(-1,dp(38)))
+        wifiChange=button("Change password"){editWifiPassword()}.apply{visibility=View.GONE}
+        wifiForget=button("Forget password"){
+            if(wifiField){getSharedPreferences("wifi_keyboard_private",MODE_PRIVATE).edit().remove("prefill").apply();updateWifiControls();wifiPaste.requestFocus()}
+        }.apply{visibility=View.GONE}
+        phone.addView(wifiChange,LinearLayout.LayoutParams(-1,dp(38)))
+        phone.addView(wifiForget,LinearLayout.LayoutParams(-1,dp(38)).apply{topMargin=dp(6)})
         card.addView(phone,LinearLayout.LayoutParams(dp(208),-2))
         keyboard.connectFocus(go,hide,refresh)
         go.nextFocusRightId=hide.id;hide.nextFocusLeftId=go.id;refresh.nextFocusDownId=go.id
@@ -129,21 +168,61 @@ class LumaInputMethodService:InputMethodService(){
         outInsets.touchableRegion.set(Rect(location[0],location[1],location[0]+card.width,location[1]+card.height))
     }
     override fun onStartInput(info:EditorInfo?,restarting:Boolean){
+        wifiDraft=null
         stopPhone();editing=false
         super.onStartInput(info,restarting)
-        info?.packageName?.takeIf{it!=packageName}?.let{lastExternalPackage=it;lastExternalSecret=isPassword(info.inputType)}
-        secret=isPassword(info?.inputType?:0)
+        wifiField=info?.packageName=="com.yhk.setting" && WifiPasswordAutofill.matches(info.packageName,runCatching{
+            packageManager.getResourcesForApplication(info.packageName).getResourceEntryName(info.fieldId)
+        }.getOrNull())
+        secret=wifiField || isPassword(info?.inputType?:0)
+        info?.packageName?.takeIf{it!=packageName}?.let{lastExternalPackage=it;lastExternalSecret=secret}
+        // The P6 settings overlay focuses this editor without asking Android to show an IME.
+        if(wifiField && android.os.Build.VERSION.SDK_INT>=28)main.postDelayed({
+            if(wifiField && currentInputEditorInfo?.packageName=="com.yhk.setting")requestShowSelf(0)
+        },250)
     }
     override fun onStartInputView(info:EditorInfo?,restarting:Boolean){
         super.onStartInputView(info,restarting);editing=true
+        updateWifiControls()
+        wifiPaste.nextFocusRightId=go.id;wifiPaste.nextFocusUpId=keyboard.firstKey.id
+        go.nextFocusLeftId=if(wifiField)wifiPaste.id else View.NO_ID
         go.text=when(info?.imeOptions?.and(EditorInfo.IME_MASK_ACTION)){
             EditorInfo.IME_ACTION_SEARCH->getString(R.string.keyboard_search);EditorInfo.IME_ACTION_NEXT->getString(R.string.keyboard_next);EditorInfo.IME_ACTION_SEND->getString(R.string.keyboard_send);else->getString(R.string.keyboard_go)
         }
-        refreshPreview();keyboard.firstKey.requestFocus();startPhone()
+        keyboard.connectFocus(go,hide,if(wifiField)wifiChange.takeIf{it.visibility==View.VISIBLE}?:wifiPaste else phoneRefresh)
+        refreshPreview();(if(wifiField)wifiPaste else keyboard.firstKey).requestFocus();startPhone();updateWifiControls()
     }
-    override fun onFinishInputView(finishingInput:Boolean){editing=false;stopPhone();super.onFinishInputView(finishingInput)}
-    override fun onFinishInput(){editing=false;stopPhone();super.onFinishInput()}
-    override fun onWindowHidden(){editing=false;stopPhone();super.onWindowHidden()}
+    private fun savedWifiPassword()=getSharedPreferences("wifi_keyboard_private",MODE_PRIVATE)
+        .getString("prefill",null)?.takeIf{WifiPasswordAutofill.valid(it)}
+    private fun updateWifiControls(){
+        if(!::wifiPaste.isInitialized)return
+        val saved=wifiField && savedWifiPassword()!=null
+        wifiPaste.visibility=if(wifiField)View.VISIBLE else View.GONE
+        wifiPaste.text=if(wifiDraft!=null)"Cancel" else if(saved)"Paste Wi-Fi password" else "Save Wi-Fi password"
+        wifiChange.visibility=if(saved && wifiDraft==null)View.VISIBLE else View.GONE
+        wifiForget.visibility=wifiChange.visibility
+        phoneRefresh.visibility=if(wifiField)View.GONE else View.VISIBLE
+        phoneTitle.text=if(wifiField)"Saved Wi-Fi password" else "Type on your phone"
+        if(wifiField){qr.visibility=View.GONE;status.text=if(wifiDraft!=null)"Enter with the remote, then Save. Stored only on this projector." else "Private to this projector. Paste never connects automatically."}
+        wifiChange.nextFocusDownId=wifiForget.id;wifiForget.nextFocusUpId=wifiChange.id
+        wifiChange.nextFocusLeftId=go.id;wifiForget.nextFocusLeftId=go.id
+        if(wifiField)go.text=if(wifiDraft!=null)"Save" else "Go"
+    }
+    private fun editWifiPassword(){
+        if(!editing || !wifiField)return
+        stopPhone();wifiDraft="";wifiCursor=0;updateWifiControls();refreshPreview();keyboard.firstKey.requestFocus()
+    }
+    private fun pasteWifiPassword(){
+        if(!editing || !wifiField)return
+        val value=savedWifiPassword()?:return
+        val connection=currentInputConnection?:return
+        // Explicit paste replaces the current entry; never submits a connection.
+        if(connection.performContextMenuAction(android.R.id.selectAll))connection.commitText(value,1)
+        refreshPreview()
+    }
+    override fun onFinishInputView(finishingInput:Boolean){wifiDraft=null;editing=false;stopPhone();super.onFinishInputView(finishingInput)}
+    override fun onFinishInput(){wifiDraft=null;editing=false;stopPhone();super.onFinishInput()}
+    override fun onWindowHidden(){wifiDraft=null;editing=false;stopPhone();super.onWindowHidden()}
     override fun onDestroy(){editing=false;stopPhone();worker.shutdownNow();super.onDestroy()}
     override fun onUpdateSelection(oldSelStart:Int,oldSelEnd:Int,newSelStart:Int,newSelEnd:Int,candidatesStart:Int,candidatesEnd:Int){
         super.onUpdateSelection(oldSelStart,oldSelEnd,newSelStart,newSelEnd,candidatesStart,candidatesEnd)
@@ -157,7 +236,7 @@ class LumaInputMethodService:InputMethodService(){
     }
     private fun refreshPreview(){
         if(!::preview.isInitialized)return
-        val text=if(secret)"Secure field · use the remote" else snapshot()
+        val text=wifiDraft?.let{"New password: "+"•".repeat(it.length)}?:if(secret)"Secure field · use the remote" else snapshot()
         preview.setText(text?:"Type with the remote in the app's field")
         if(!secret && text!=null)session?.updateText(text)
     }
@@ -172,6 +251,13 @@ class LumaInputMethodService:InputMethodService(){
     }
     private fun confirm(){
         if(!editing)return
+        wifiDraft?.let{draft->
+            if(!WifiPasswordAutofill.valid(draft)){
+                android.widget.Toast.makeText(this,"Use 8–63 characters, or a 64-digit hexadecimal Wi-Fi key",android.widget.Toast.LENGTH_LONG).show();return
+            }
+            getSharedPreferences("wifi_keyboard_private",MODE_PRIVATE).edit().putString("prefill",draft).apply()
+            wifiDraft=null;updateWifiControls();refreshPreview();wifiPaste.requestFocus();return
+        }
         if(!sendDefaultEditorAction(false))sendDownUpKeyEvents(KeyEvent.KEYCODE_ENTER)
         if(currentInputEditorInfo?.imeOptions?.and(EditorInfo.IME_MASK_ACTION)!=EditorInfo.IME_ACTION_NEXT)requestHideSelf(0)
     }

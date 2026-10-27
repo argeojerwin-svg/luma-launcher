@@ -734,10 +734,10 @@ class LauncherActivity : Activity() {
     }
     private fun wallpaperMenu() {
         showPanel("Wallpaper",listOf(
-            action("Choose local image  ›"){pick("wallpaper","image/*")},
-            action("Use included Fjord landscape"){preferences.put("wallpaper","");loadedWallpaper="\u0000";updateArtwork();closePanel()},
+            action("Choose local image or video  ›"){pick("wallpaper","image/*")},
+            action("Use included Fjord landscape"){preferences.put("wallpaper","");preferences.put("video","");loadedWallpaper="\u0000";updateArtwork();closePanel()},
             action("Back"){controlCentre()}
-        ),"Choose a landscape photo from a USB drive or local storage. App artwork can override it for the first row.",back={controlCentre()})
+        ),"Choose a photo, or a video with a still wallpaper frame and playback during screensaver. App artwork can override the first row.",back={controlCentre()})
     }
     private fun screensaverSettings() {
         val selected=preferences.number("saverMinutes",5)
@@ -1103,7 +1103,7 @@ class LauncherActivity : Activity() {
     private fun pick(target: String,type: String) {
         pickTarget=target;pickProfile=preferences.profile
         if(type.startsWith("image/")){
-            startActivityForResult(Intent(this,ImagePickerActivity::class.java),42);return
+            startActivityForResult(Intent(this,ImagePickerActivity::class.java).putExtra("allow_video",target=="wallpaper"),42);return
         }
         val intent=Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType(type)
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
@@ -1117,6 +1117,11 @@ class LauncherActivity : Activity() {
         try {
             if(requestCode==41)contentResolver.takePersistableUriPermission(uri,Intent.FLAG_GRANT_READ_URI_PERMISSION)
             val active=preferences.profile;preferences.profile=pickProfile;preferences.put(pickTarget,uri.toString());preferences.profile=active
+            if(pickTarget=="wallpaper"){
+                preferences.profile=pickProfile
+                preferences.put("video",if(requestCode==42)data?.getStringExtra(ImagePickerActivity.EXTRA_VIDEO).orEmpty()else "")
+                preferences.profile=active
+            }
             if(pickTarget.startsWith("tileArt:")){apps.clear();home.releaseArtwork();rebuild(pickTarget.removePrefix("tileArt:"))}
             loadedWallpaper="\u0000";updateArtwork();closePanel(false);toast("Saved for this profile")
         } catch(_:SecurityException) {toast("This picker did not grant lasting file access. Choose a file with Android's system document picker.")}

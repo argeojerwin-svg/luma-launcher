@@ -17,7 +17,21 @@ The remote keyboard includes digits, Shift, symbols, Space, Delete, cursor arrow
 
 Open the current app's search field, press the universal **Menu** button, and choose **Keyboard**. The same compact QWERTY/QR panel is available in every app. Phone **Go** submits the composed text after returning focus to the app.
 
-For standard Android fields, Luma uses its selected input method and supports Unicode. On the P6, custom TV fields can instead receive printable English/ASCII text through the projector's existing local debugging connection. This fallback appends at the app's cursor and presses Enter; clear an existing query in the app first. It verifies the foreground package before sending text and refuses known password fields. It cannot create a text field in an app or guarantee support for every custom app interface. Prime Video and Apple TV must be on their search field before using it.
+For standard Android fields, Luma uses its selected input method and supports Unicode. On the P6, custom TV fields can instead receive printable English/ASCII text through the projector's existing local debugging connection. This fallback appends at the app's cursor and presses Enter; clear an existing query in the app first. It verifies the foreground package before sending text and refuses known password fields. It cannot create a text field in an app or guarantee support for every custom app interface. Apple TV and other custom interfaces remain app-dependent; Prime Video uses the direct search link below.
+
+## Prime Video search
+
+Prime Video TV ignores ordinary Android text and letter events in its custom search screen on the tested P6 build. From Prime, choose **Menu → Keyboard**, compose your query, and choose **Go**. Luma opens `https://app.primevideo.com/search?phrase=...` in the installed Prime activity with the query URL-encoded. Prime may ask you to select your existing profile before showing the requested results. This shortcut searches; it does not replace Prime's sign-in or password fields.
+
+P6 verification (1.0.5): submitted `inception` through the overlay's live QR phone Go endpoint; Prime displayed that query and matching results. The local menu helper remained running after installation. Release build, JVM tests and lint passed.
+
+## Saved Wi-Fi password (P6)
+
+In the projector's Wi-Fi password keyboard, new users see **Save Wi-Fi password**. Select it, enter a password with the remote, and choose **Save**. This saves a private reusable value; it does not enter a network password or press Connect. Entry is masked and phone/QR typing is disabled. Use 8–63 printable characters or a 64-digit hexadecimal Wi-Fi key; spaces are preserved.
+
+After saving, choose **Paste Wi-Fi password** to fill the current Wi-Fi box. **Change password** opens an empty replacement draft; Cancel keeps the existing saved value. **Forget password** removes the saved value and brings back Save. This is one reusable password per projector, not a per-network password manager. Nothing is put in Android's global clipboard, bundled in the APK, synced or committed to Git. The button is restricted to the P6 settings app's identified Wi-Fi editor; other password fields are unaffected.
+
+P6 verification (1.0.10): tested an empty saved state, remote entry and Save, Paste into the Wi-Fi editor, Change/Cancel preserving the value, and Forget removing it. No network connection was submitted. The owner's original private setting was restored after testing. Release build, lint and 51 JVM tests passed.
 
 ## YouTube and TizenTube search
 
