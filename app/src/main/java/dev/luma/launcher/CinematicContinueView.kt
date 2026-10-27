@@ -66,6 +66,10 @@ class CinematicContinueView(context:Context, private val prefs:Preferences,priva
             val image=ImageView(context).apply{scaleType=ImageView.ScaleType.CENTER_CROP;clipToOutline=true;
                 background=GradientDrawable().apply{setColor(0x55405C7B);cornerRadius=px(16).toFloat()}}
             card.addView(image,LayoutParams(-1,-1))
+            if(item.imageUrl.isBlank() && item.tileImageUrl.isBlank())card.addView(TextView(context).apply{
+                text=item.title;setTextColor(Color.WHITE);textSize=16f;gravity=Gravity.CENTER;maxLines=3
+                ellipsize=android.text.TextUtils.TruncateAt.END;setPadding(px(10),px(8),px(10),px(8))
+            },LayoutParams(-1,-1))
             row.addView(card,LinearLayout.LayoutParams(px(214),px(124)).apply{rightMargin=px(20);topMargin=px(8)})
             cards.add(card)
             val tileImage=item.tileImageUrl.ifBlank{item.imageUrl}

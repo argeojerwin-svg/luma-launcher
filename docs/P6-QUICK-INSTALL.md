@@ -1,14 +1,14 @@
 # Install the updated Luma P6 build
 
-**1.0.10 preview:** the release build, release lint and 51 JVM tests passed. The local image picker, dynamic screensaver updates and universal Keyboard's QR/phone Go path in Stremio were checked on the P6. Individual custom app search interfaces remain unverified. The previous 1.0.3 remains available on the release page for recovery.
+**1.0.11 preview:** the release build, release lint and 55 JVM tests passed. The local image picker, dynamic screensaver updates and universal Keyboard's QR/phone Go path in Stremio were checked on the P6. Individual custom app search interfaces remain unverified. The previous 1.0.3 remains available on the release page for recovery.
 
-[Download Luma-P6-1.0.10.apk](https://github.com/argeojerwin-svg/luma-launcher/releases/download/v1.0.10-p6.1/Luma-P6-1.0.10.apk)
+[Download Luma-P6-1.0.11.apk](https://github.com/argeojerwin-svg/luma-launcher/releases/download/v1.0.11-p6.1/Luma-P6-1.0.11.apk)
 
-[Release page](https://github.com/argeojerwin-svg/luma-launcher/releases/tag/v1.0.10-p6.1) · [All source changes](https://github.com/smzaki101-lab/luma-launcher/pull/2)
+[Release page](https://github.com/argeojerwin-svg/luma-launcher/releases/tag/v1.0.11-p6.1) · [All source changes](https://github.com/smzaki101-lab/luma-launcher/pull/2)
 
 ## Install
 
-1. Download **Luma-P6-1.0.10.apk** from the link above, or from **Assets** on the release page. The source-code ZIP is for development.
+1. Download **Luma-P6-1.0.11.apk** from the link above, or from **Assets** on the release page. The source-code ZIP is for development.
 2. Open the APK on the projector using its file manager or Android TV installer. A USB drive can be used to copy the downloaded APK to the projector. Allow installation from that installer if Android asks, then choose **Install** or **Update**.
 3. Open **Luma** from your existing app list. You can try it before choosing it as the default Home app.
 
@@ -55,8 +55,8 @@ Use the actual `.apk` file and confirm installation from that installer is permi
 
 - APK signature verified against the established Luma release certificate.
 - The public download is checked byte-for-byte against the locally signed APK.
-- For 1.0.10, release build and release lint passed; all 51 JVM tests passed. The update was installed on the P6, a shared photo was imported and selected, the dynamic screensaver updated over time, and QR/phone Go through the universal overlay opened Stremio search results.
+- For 1.0.11, release build and release lint passed; all 55 JVM tests passed. The update was installed on the P6, a shared photo was imported and selected, the dynamic screensaver updated over time, and QR/phone Go through the universal overlay opened Stremio search results.
 - Full reboot, local listener recovery, on/off setting, short Menu, held Menu and the TizenTube QWERTY/QR shortcut were checked on the AUMI P6 running Android 11.
 - The owner confirmed short Menu, held Menu and YouTube keyboard work on the physical remote.
 
-This is a P6 preview release from the contributor fork while the changes are reviewed upstream. Other projector models and firmware have not been validated. The APK identifies itself as Luma 1.0.10, version code 54; the release tag `v1.0.10-p6.1` distinguishes this feature build.
+This is a P6 preview release from the contributor fork while the changes are reviewed upstream. Other projector models and firmware have not been validated. The APK identifies itself as Luma 1.0.11, version code 55; the release tag `v1.0.11-p6.1` distinguishes this feature build.

@@ -117,13 +117,17 @@ class LauncherActivity : Activity() {
         refreshApps();updateArtwork();updateClock()
     }
     override fun onSaveInstanceState(outState: Bundle) {outState.putString("pickTarget",pickTarget);outState.putInt("pickProfile",pickProfile);super.onSaveInstanceState(outState)}
+    private val mediaHistoryChanges=android.content.SharedPreferences.OnSharedPreferenceChangeListener{_,_->if(resumed)loadContinue()}
     override fun onResume() {
         super.onResume();weather.start();resumed=true;immersive();home.alpha=1f;home.scaleX=1f;home.scaleY=1f
         stopNetworkObserve=NetworkState.observe(this){updateClock();panel?.setNetworkStatus(it.detail)}
         main.removeCallbacks(clockTick);main.post(clockTick);resetInactivity();refreshApps();home.reloadArtwork()
         loadContinue();refreshWatchNext();syncContinue(false)
+        MediaResumeSource.connect(this)
+        getSharedPreferences("media_resume",MODE_PRIVATE).registerOnSharedPreferenceChangeListener(mediaHistoryChanges)
     }
     override fun onPause() {
+        getSharedPreferences("media_resume",MODE_PRIVATE).unregisterOnSharedPreferenceChangeListener(mediaHistoryChanges)
         switcherRequest++;switcherPending=false
         if(cinematic!=null)closeCinematic(false)
         stopNetworkObserve?.invoke();stopNetworkObserve=null
@@ -436,7 +440,7 @@ class LauncherActivity : Activity() {
     }
     private fun loadContinue(){
         continueItems=if(preferences.number("continueEnabled",1)==1)
-            (watchNextItems+ManualContinueStore.list(preferences)+trakt.cached).distinctBy{it.id}.filter{it.id !in preferences.list("continueHidden")} else emptyList()
+            (watchNextItems+MediaResumeSource.read(this)+ManualContinueStore.list(preferences)+trakt.cached).distinctBy{it.id}.filter{it.id !in preferences.list("continueHidden")} else emptyList()
         home.continueWatching(continueItems.size)
     }
     private fun refreshWatchNext(){
@@ -447,8 +451,15 @@ class LauncherActivity : Activity() {
         }}
     }
     private fun openCinematic(app:AppEntry):Boolean{
-        if(app.id !in setOf("com.apple.atve.androidtv.appletv","com.amazon.amazonvideo.livingroom","com.disney.disneyplus","com.stremio.one"))return false
+        if(app.id !in setOf("com.apple.atve.androidtv.appletv","com.amazon.amazonvideo.livingroom","com.disney.disneyplus","com.stremio.one") && app.id !in MediaResumePolicy.labels)return false
         val items=continueItems.filter{it.sourcePackage==app.id}
+        if(items.isEmpty() && app.id in MediaResumePolicy.labels && !MediaResumeSource.enabled(this)){
+            showPanel("Continue watching & listening",listOf(
+                action("Enable Luma playback history"){openSettings(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)},
+                action("Back"){closePanel()}
+            ),"Allow Luma playback history in Android notification access, then play something in ${app.label}. Luma remembers reported media titles, artwork and progress on this projector only. Notification messages are not read. Account histories cannot be imported.")
+            return true
+        }
         if(items.isEmpty()){toast("No Continue Watching titles available for ${app.label}.");return true}
         openCinematicEntries(items)
         return true
@@ -572,6 +583,7 @@ class LauncherActivity : Activity() {
     }
     private fun openContinueItem(item:ContinueItem){
         if(cinematic!=null)closeCinematic(false)
+        if(item.origin=="Local media session" && MediaResumeSource.resumeLive(this,item)){closeContinue(false);return}
         if(item.sourcePackage.isNotBlank()){
             val app=installed.firstOrNull{it.id==item.sourcePackage}
             if(app!=null){
@@ -650,6 +662,13 @@ class LauncherActivity : Activity() {
                 else requestPermissions(arrayOf(WatchNextSource.PERMISSION),901)
             },
             action("View Continue Watching  ›"){showContinue()},
+            action("YouTube, Prime & Spotify playback · ${if(MediaResumeSource.enabled(this))"On" else "Enable"}  ›"){
+                showPanel("Local playback history",listOf(
+                    action("Open Android notification access") {openSettings(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)},
+                    action("Clear this profile's playback history"){MediaResumeSource.clear(this);loadContinue();continueSettings()},
+                    action("Back"){continueSettings()}
+                ),"Enable Luma playback history in Android notification access. Luma reads media sessions only for YouTube, TizenTube, Prime Video and Spotify; notification messages are not read. New playback on this projector is remembered privately. It cannot import account histories. If an exact resume link is unavailable, the card reopens the app. Disable Android access to stop recording.",back={continueSettings()})
+            },
             action("Stremio title links · ${if(preferences.number("continueStremioLinks",1)==1)"On" else "Off"}"){
                 preferences.put("continueStremioLinks",1-preferences.number("continueStremioLinks",1));continueSettings()
             },
