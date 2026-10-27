@@ -6,6 +6,8 @@ This is a **P6-specific, Mac-assisted test feature**, not a built-in universal r
 
 ## Start manually
 
+For the equivalent Windows helper and automatic Windows login recovery, see [P6 Menu bridge on Windows](P6-MENU-BRIDGE-WINDOWS.md). The Mac commands below remain available.
+
 On a Mac with Android platform-tools installed, connect the Mac and P6 to the same trusted network. Enable wireless ADB on the P6 and find its current IP address. From the repository root, run:
 
 ```sh

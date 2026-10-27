@@ -9,4 +9,6 @@ local.properties
 *.aab
 *.log
 .DS_Store
+.local/
+signing.env
 

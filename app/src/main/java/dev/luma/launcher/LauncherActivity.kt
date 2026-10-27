@@ -91,6 +91,7 @@ class LauncherActivity : Activity() {
     }
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
+        LocalMenuService.resumeIfEnabled(this)
         if(intent?.action==ACTION_GLOBAL_CONTROL)pendingGlobalTarget=intent.getStringExtra(EXTRA_GLOBAL_TARGET)
         window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
         immersive()
@@ -104,7 +105,7 @@ class LauncherActivity : Activity() {
         setContentView(root)
         home.onLaunch={launch(it)};home.onContext={contextMenu(it)};home.onControl={controlCentre()}
         home.onFolderOpen={home.showFolder(installed,it)};home.onFolderContext={folderOptions(it)}
-        home.onApps={appsSection()};home.onAllApps={home.showLibrary(installed)};home.onFocusApp={app -> selectedApp=app;updateArtwork()}
+        home.onApps={appsSection(true)};home.onAllApps={home.showLibrary(installed,home.focusedId)};home.onFocusApp={app -> selectedApp=app;updateArtwork()}
         home.onMove={from,to -> moveApp(from,to)}
         home.onTopShelf={app->expandShelf(app)}
         home.onCinematicContinue={app->openCinematic(app)}
@@ -174,6 +175,7 @@ class LauncherActivity : Activity() {
             "wallpaper"->wallpaperMenu()
             "screensaver"->saver.start()
             "more"->moreControls()
+            "global_menu_settings"->globalControlSettings()
         }
     }
     @Suppress("DEPRECATION") private fun immersive() {
@@ -237,6 +239,7 @@ class LauncherActivity : Activity() {
     }
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if(event.keyCode==KeyEvent.KEYCODE_HOME)return super.dispatchKeyEvent(event)
+        if(panel==null && switcher?.handleKeyEvent(event)==true)return true
         if(event.keyCode==KeyEvent.KEYCODE_APP_SWITCH){if(event.action==KeyEvent.ACTION_UP && switcher==null)appSwitcher();return true}
         if(event.keyCode==suppressWakeKey) {if(event.action==KeyEvent.ACTION_UP)suppressWakeKey=-1;return true}
         if(saver.active && event.action==KeyEvent.ACTION_DOWN) {saver.stop();suppressWakeKey=event.keyCode;resetInactivity();return true}
@@ -347,10 +350,11 @@ class LauncherActivity : Activity() {
     }
     private fun action(title: String, block: ()->Unit)=PanelAction(title,block)
     private fun controlCentre(focus:Int=0) {
+        if(switcher!=null)closeSwitcher(false)
         showPanel("Control Centre",listOf(
             action("All Apps") {closePanel(false);home.showLibrary(installed)},
             action("App Switcher") {appSwitcher()},
-            action("Search") {searchApps()},
+            action("Keyboard") {searchApps()},
             action("Audio settings") {openSettings(Settings.ACTION_SOUND_SETTINGS)},
             action("Wallpaper") {wallpaperMenu()},
             action("Start screensaver") {closePanel(false);saver.start()},
@@ -730,23 +734,44 @@ class LauncherActivity : Activity() {
     }
     private fun wallpaperMenu() {
         showPanel("Wallpaper",listOf(
-            action("Choose local image  ›"){pick("wallpaper","image/*")},
-            action("Use included Fjord landscape"){preferences.put("wallpaper","");loadedWallpaper="\u0000";updateArtwork();closePanel()},
+            action("Choose local image or video  ›"){pick("wallpaper","image/*")},
+            action("Use included Fjord landscape"){preferences.put("wallpaper","");preferences.put("video","");loadedWallpaper="\u0000";updateArtwork();closePanel()},
+            action("Use Blue Hour Coast"){preferences.put("wallpaper","builtin:blue_hour_coast");preferences.put("video","");loadedWallpaper="\u0000";updateArtwork();closePanel()},
+            action("Use Midnight Fjord"){preferences.put("wallpaper","builtin:midnight_fjord");preferences.put("video","");loadedWallpaper="\u0000";updateArtwork();closePanel()},
             action("Back"){controlCentre()}
-        ),"Choose a landscape photo from a USB drive or local storage. App artwork can override it for the first row.",back={controlCentre()})
+        ),"Choose an included wallpaper, local photo, or video with screensaver playback. App artwork can override the first row.",back={controlCentre()})
     }
     private fun screensaverSettings() {
         val selected=preferences.number("saverMinutes",5)
         showPanel("Screensaver",listOf(
             action("Start now"){closePanel(false);saver.start()},
+            action("Motion · ${if(preferences.number("saverMotion",if(preferences.motion==0)0 else 1)==0)"Still" else "Dynamic"}  ›"){
+                preferences.put("saverMotion",if(preferences.number("saverMotion",if(preferences.motion==0)0 else 1)==0)1 else 0);screensaverSettings()
+            },
             action("Idle timeout · ${if(selected==0)"Off" else "$selected minutes"}"){
                 showPanel("Idle timeout",listOf(0,1,2,5,10,20,30).map{n->action(if(n==0)"Off" else "$n minutes"){
                     preferences.put("saverMinutes",n);screensaverSettings()
                 }},back={screensaverSettings()})
             },
-            action("Choose local video  ›"){pick("video","video/*")},
-            action("Use landscape instead of video"){preferences.put("video","");screensaverSettings()}
-        ),"Runs only while Luma is on screen. Any remote press wakes it. Video is muted; codec support depends on your projector.",back={settings(7)})
+            action("Use wallpaper for projector idle screen  ›"){selectWallpaperScreensaver()}
+        ),"Shows your wallpaper without app tiles. Select it for the projector's idle screen to replace its factory screensaver too. Any remote press wakes it.",back={settings(7)})
+    }
+    private fun selectWallpaperScreensaver(){
+        val settings=Intent(Settings.ACTION_DREAM_SETTINGS)
+        if(settings.resolveActivity(packageManager)!=null){openIntent(settings,false);return}
+        // P6 firmware omits Android's chooser. Use only its existing local root debugging.
+        io.execute{
+            val result=runCatching{
+                val adb=LoopbackAdb()
+                check(adb.request("shell:id -u").trim()=="0")
+                val component="dev.luma.launcher/.WallpaperDreamService"
+                check(adb.request("shell:settings put secure screensaver_components $component && settings put secure screensaver_enabled 1 && settings get secure screensaver_components").trim()==component)
+            }
+            main.post{if(!isDestroyed){
+                toast(if(result.isSuccess)"Wallpaper selected for the projector screensaver"
+                    else "Could not select screensaver. Enable Projector-only Menu and try again.")
+            }}
+        }
     }
     private fun shortcutSettings() {
         val options=listOf("Menu" to KeyEvent.KEYCODE_MENU,"Play / Pause" to KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,"Info" to KeyEvent.KEYCODE_INFO)
@@ -760,7 +785,15 @@ class LauncherActivity : Activity() {
             .any{it.resolveInfo.serviceInfo.packageName==packageName &&
                 it.resolveInfo.serviceInfo.name==GlobalControlService::class.java.name}
         val overlayAllowed=Settings.canDrawOverlays(this)
+        val shortcutHelp=if(LocalMenuService.enabled(this))
+            "Projector-only Menu is enabled. Luma restores the P6 remote shortcut after startup. Check its notification for connection status. Overlay permission is needed to show Control Centre over apps."
+        else "${if(enabled)"Shortcut listed in Android settings" else "Accessibility shortcut off"} · ${if(overlayAllowed)"Overlay allowed" else "Overlay permission needed"}. The accessibility shortcut requires both permissions. The P6 can instead use Projector-only Menu or the external bridge. Luma does not read app screen content."
         showPanel("Control Centre in apps",listOf(
+            action("Projector-only Menu · ${if(LocalMenuService.enabled(this))"On" else "Off"}  ›"){
+                if(LocalMenuService.enabled(this))LocalMenuService.disable(this)
+                else LocalMenuService.enable(this)
+                main.postDelayed({globalControlSettings()},300)
+            },
             action("Display over other apps · ${if(overlayAllowed)"Allowed" else "Allow"}  ›"){
                 val intent=Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                     android.net.Uri.parse("package:$packageName"))
@@ -768,7 +801,7 @@ class LauncherActivity : Activity() {
             },
             action("Open Android Accessibility settings  ›"){openSettings(Settings.ACTION_ACCESSIBILITY_SETTINGS)},
             action("Back"){settings(9)}
-        ),"${if(enabled)"Shortcut listed in Android settings" else "Shortcut off"} · ${if(overlayAllowed)"Overlay allowed" else "Overlay permission needed"}. Both permissions are needed. If Menu does not respond, Android may not have attached the service. Luma does not read app screen content.",back={settings(9)})
+        ),shortcutHelp,back={settings(9)})
     }
     private fun profiles() {
         val active=preferences.profile
@@ -868,7 +901,7 @@ class LauncherActivity : Activity() {
         val ids=AppVisibility.dock(installed,preferences).toMutableList();val i=ids.indexOf(id);val target=i+delta
         if(i>=0 && target in ids.indices){ids.removeAt(i);ids.add(target,id);preferences.putList("dock",ids);rebuild(id)}
     }
-    private fun appsSection(){
+    private fun appsSection(returnToGrid:Boolean=false){
         val store=installed.firstOrNull{it.id=="com.android.vending"}
         showPanel("Apps",(if(store!=null)listOf(action("Open Google Play Store  ›"){closePanel(false);launch(store)})else emptyList())+listOf(
             action("Recently Used  ›"){recentApps()},
@@ -877,7 +910,7 @@ class LauncherActivity : Activity() {
             action("Hidden applications  ›"){managedApps(true)},
             action("All installed applications  ›"){managedApps(false)},
             action("Organise dock  ›"){dockManagement()}
-        ),"Discover, install and organise your apps. Google Play opens separately.",back={controlCentre()})
+        ),"Discover, install and organise your apps. Google Play opens separately.",back={if(returnToGrid)closePanel() else controlCentre()})
     }
     private fun appManagement(){
         val visible=installed.count{AppVisibility.visible(it,preferences)}
@@ -1071,17 +1104,26 @@ class LauncherActivity : Activity() {
     }
     private fun pick(target: String,type: String) {
         pickTarget=target;pickProfile=preferences.profile
+        if(type.startsWith("image/")){
+            startActivityForResult(Intent(this,ImagePickerActivity::class.java).putExtra("allow_video",target=="wallpaper"),42);return
+        }
         val intent=Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType(type)
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
         try {startActivityForResult(intent,41)} catch(_:ActivityNotFoundException) {toast("No document picker is installed. Install a remote-compatible file picker or use the included landscape.")}
     }
     @Deprecated("Platform document picker compatibility") override fun onActivityResult(requestCode: Int,resultCode: Int,data: Intent?) {
         super.onActivityResult(requestCode,resultCode,data)
-        if(requestCode!=41 || resultCode!=RESULT_OK)return
-        val uri=data?.data?:return
+        if(requestCode !in listOf(41,42) || resultCode!=RESULT_OK)return
+        val uri=if(requestCode==42)data?.getStringExtra(ImagePickerActivity.EXTRA_IMAGE)?.let{Uri.parse(it)}else data?.data
+        if(uri==null)return
         try {
-            contentResolver.takePersistableUriPermission(uri,Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            if(requestCode==41)contentResolver.takePersistableUriPermission(uri,Intent.FLAG_GRANT_READ_URI_PERMISSION)
             val active=preferences.profile;preferences.profile=pickProfile;preferences.put(pickTarget,uri.toString());preferences.profile=active
+            if(pickTarget=="wallpaper"){
+                preferences.profile=pickProfile
+                preferences.put("video",if(requestCode==42)data?.getStringExtra(ImagePickerActivity.EXTRA_VIDEO).orEmpty()else "")
+                preferences.profile=active
+            }
             if(pickTarget.startsWith("tileArt:")){apps.clear();home.releaseArtwork();rebuild(pickTarget.removePrefix("tileArt:"))}
             loadedWallpaper="\u0000";updateArtwork();closePanel(false);toast("Saved for this profile")
         } catch(_:SecurityException) {toast("This picker did not grant lasting file access. Choose a file with Android's system document picker.")}

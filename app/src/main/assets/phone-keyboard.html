@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <title>Luma · Type on your phone</title>
+  <style nonce="__CSP_NONCE__">
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100svh; padding: max(28px, env(safe-area-inset-top)) 22px 32px; background: radial-gradient(ellipse at top right, #213c60, transparent 65%), #0e1828; color: #f4f8ff; font: 16px/1.5 system-ui, sans-serif; }
+    main { max-width: 520px; margin: 8vh auto 0; }
+    .brand { font-size: 12px; font-weight: 700; letter-spacing: .22em; color: #9bbcf1; }
+    h1 { font-size: clamp(32px, 9vw, 44px); line-height: 1.12; letter-spacing: -.04em; margin: 22px 0 16px; }
+    .intro, footer { color: #aebed4; }
+    form { margin-top: 30px; padding: 24px; border: 1px solid #ffffff20; border-radius: 24px; background: #ffffff09; box-shadow: 0 20px 70px #0003; }
+    label { display: block; font-size: 14px; color: #c5d6ec; margin-bottom: 12px; }
+    input { width: 100%; border: 1px solid #718db255; border-radius: 13px; padding: 15px 13px; font: inherit; font-size: 20px; background: #0b1423; color: white; outline: none; }
+    input:focus { border-color: #8abaff; box-shadow: 0 0 0 3px #6baaff20; }
+    button { width: 100%; margin-top: 16px; border: 0; border-radius: 13px; padding: 15px; font: inherit; font-weight: 650; background: #9bc3ff; color: #10213c; }
+    button:disabled, input:disabled { opacity: .5; }
+    #status { min-height: 24px; margin: 16px 0 0; font-size: 14px; color: #a8d9c3; }
+    #status.error { color: #f1bf98; }
+    footer { font-size: 13px; margin-top: 24px; }
+  </style>
+</head>
+<body>
+<main>
+  <div class="brand">LUMA / PHONE KEYBOARD</div>
+  <h1>Your phone.<br>Your TV keyboard.</h1>
+  <p class="intro">Type here and your text appears on the projector.</p>
+  <form id="form">
+    <label for="text" id="label">Connecting to Luma…</label>
+    <input id="text" type="text" autocomplete="off" spellcheck="false" enterkeyhint="go" disabled>
+    <button id="send" type="submit" disabled>Go</button>
+    <p id="status" role="status" aria-live="polite">Connecting…</p>
+  </form>
+  <footer>Tap Go to use your text, just like Save on the projector. Keep both devices on the same Wi-Fi. This connection ends when the TV’s text window closes.</footer>
+</main>
+<script nonce="__CSP_NONCE__">
+  const token = location.hash.slice(1);
+  const input = document.querySelector('#text');
+  const send = document.querySelector('#send');
+  const status = document.querySelector('#status');
+  let pending = null, sending = false, connected = false, submitting = false, done = false, timer;
+  const message = (text, error = false) => { status.textContent = text; status.className = error ? 'error' : ''; };
+  async function request(path, options = {}) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    try {
+      const response = await fetch(path, { ...options, signal: controller.signal, cache: 'no-store', headers: { 'X-Luma-Token': token, ...(options.headers || {}) } });
+      if (!response.ok) throw new Error(response.status === 403 || response.status === 410 ? 'Scan the current QR code on your TV to reconnect.' : 'Could not send. Keep this text window open on the TV and try again.');
+      return response;
+    } finally { clearTimeout(timeout); }
+  }
+  async function flush() {
+    if (sending || pending === null) return;
+    sending = true;
+    try {
+      while (pending !== null) {
+        const edit = pending; pending = null;
+        try {
+          await request(edit.submit ? '/submit' : '/text', { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: edit.value });
+          if (edit.submit) {
+            done = true; send.textContent = 'Done';
+            message('Done on your TV. You can close this page.');
+            return;
+          }
+          if (!submitting) message('Text is on your TV. Tap Go when finished.');
+        } catch (error) {
+          if (edit.submit) {
+            // A lost response may still have submitted. Do not automatically submit twice.
+            send.textContent = 'Check your TV';
+            message('Could not confirm. Check your TV; scan its current QR code to try again.', true);
+            return;
+          }
+          if (pending && pending.submit) continue;
+          if (pending === null) pending = edit;
+          throw error;
+        }
+      }
+    } catch (error) { message(error.message || 'Connection lost. Check Wi-Fi and scan the QR code again.', true); }
+    finally { sending = false; }
+  }
+  async function connect() {
+    try {
+      if (!token) throw new Error('Scan the QR code beside the keyboard on your TV.');
+      const state = await (await request('/state')).json();
+      document.querySelector('#label').textContent = state.title;
+      input.maxLength = state.limit; input.value = state.text;
+      input.disabled = false; send.disabled = false; send.textContent = 'Go'; connected = true;
+      message('Connected. Start typing.');
+    } catch (error) { send.disabled = false; send.textContent = 'Retry connection'; message(error.message || 'Could not connect. Check that your phone and projector use the same Wi-Fi.', true); }
+  }
+  input.addEventListener('input', () => {
+    if (submitting || done) return;
+    pending = { value: input.value, submit: false }; clearTimeout(timer); timer = setTimeout(flush, 120);
+  });
+  document.querySelector('#form').addEventListener('submit', event => {
+    event.preventDefault();
+    if (submitting || done) return;
+    if (!connected) { connect(); return; }
+    if (!input.value.trim()) { message('Enter some text first.', true); input.focus(); return; }
+    submitting = true; input.disabled = true; send.disabled = true; send.textContent = 'Opening…';
+    pending = { value: input.value, submit: true }; clearTimeout(timer); message('Confirming on your TV…'); flush();
+  });
+  window.addEventListener('pagehide', () => clearTimeout(timer));
+  connect();
+</script>
+</body>
+</html>

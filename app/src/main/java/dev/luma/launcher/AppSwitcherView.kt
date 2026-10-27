@@ -26,7 +26,7 @@ class AppSwitcherView(context:Context, private val prefs:Preferences, private va
     private val backgroundPaint=Paint(Paint.FILTER_BITMAP_FLAG)
     private val backgroundBounds=Rect()
     private val row=LinearLayout(context).apply{orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL;clipChildren=false;clipToPadding=false}
-    private val scroll=HorizontalScrollView(context).apply{isHorizontalScrollBarEnabled=false;clipToPadding=false;addView(row)}
+    private val scroll=HorizontalScrollView(context).apply{isHorizontalScrollBarEnabled=false;isFocusable=false;descendantFocusability=FOCUS_AFTER_DESCENDANTS;clipToPadding=false;addView(row)}
     private val cards=mutableListOf<AppTile>()
     private var selected=0
     private var selectionReady=false
@@ -46,7 +46,7 @@ class AppSwitcherView(context:Context, private val prefs:Preferences, private va
         frozenHome?.let{canvas.drawBitmap(it,null,backgroundBounds,backgroundPaint);canvas.drawColor(0xD9091323.toInt())}
     }
     init{
-        isFocusable=true
+        isFocusable=true;isFocusableInTouchMode=true;descendantFocusability=FOCUS_AFTER_DESCENDANTS
         if(frozenHome==null)setBackgroundColor(0xD9091323.toInt()) else setWillNotDraw(false)
         val margin=(resources.displayMetrics.widthPixels-cardWidth)/2
         addView(TextView(context).apply{text="Recently opened";setTextColor(Color.WHITE);textSize=32f;typeface=Typeface.create("sans-serif-medium",Typeface.NORMAL)},
@@ -57,6 +57,7 @@ class AppSwitcherView(context:Context, private val prefs:Preferences, private va
         row.setPadding(margin,0,margin,0)
         entries.forEachIndexed{index,app->
             val tile=AppTile(context,app,repo.displayName(app),prefs)
+            tile.isFocusableInTouchMode=true;tile.isLongClickable=false
             tile.externalFocusMotion=true
             tile.configure((cardWidth-36*unit),unit)
             row.addView(tile,LinearLayout.LayoutParams(cardWidth,cardHeight).apply{rightMargin=gap})
@@ -65,20 +66,37 @@ class AppSwitcherView(context:Context, private val prefs:Preferences, private va
             renderCard(index,0f)
             tile.setOnClickListener{open(app)}
             tile.selected={focused->if(focused)select(index)}
-            tile.setOnKeyListener{_,key,event->
-                if(event.action!=KeyEvent.ACTION_DOWN)false else when(key){
-                    KeyEvent.KEYCODE_DPAD_LEFT->{cards.getOrNull((index-1).coerceAtLeast(0))?.requestFocus();true}
-                    KeyEvent.KEYCODE_DPAD_RIGHT->{cards.getOrNull((index+1).coerceAtMost(cards.lastIndex))?.requestFocus();true}
-                    KeyEvent.KEYCODE_BACK->{dismiss();true}
-                    else->false
-                }
-            }
             tile.art=repo.cachedArtwork(app)
         }
         addView(TextView(context).apply{text="◀  ▶  Browse       OK  Open       Back  Close";gravity=Gravity.CENTER;setTextColor(0xCFFFFFFF.toInt());textSize=18f},
             LayoutParams(-1,(56*unit).toInt(),Gravity.BOTTOM).apply{bottomMargin=(74*unit).toInt()})
         alpha=0f;animate().alpha(1f).setDuration(if(prefs.motion==0)0 else 180).start()
-        post{cards.firstOrNull()?.requestFocus();select(0)}
+        post{focusCard(0)}
+    }
+    private fun focusCard(index:Int){
+        if(cards.isEmpty())return
+        val next=index.coerceIn(cards.indices)
+        cards[next].requestFocus()
+        select(next)
+    }
+    /** The visible modal owns remote navigation even if Android temporarily clears child focus. */
+    fun handleKeyEvent(event:KeyEvent):Boolean=when(event.keyCode){
+        KeyEvent.KEYCODE_DPAD_LEFT,KeyEvent.KEYCODE_DPAD_RIGHT->{
+            if(event.action==KeyEvent.ACTION_DOWN)focusCard(selected+if(event.keyCode==KeyEvent.KEYCODE_DPAD_RIGHT)1 else -1)
+            true
+        }
+        KeyEvent.KEYCODE_DPAD_UP,KeyEvent.KEYCODE_DPAD_DOWN->true
+        KeyEvent.KEYCODE_DPAD_CENTER,KeyEvent.KEYCODE_ENTER,KeyEvent.KEYCODE_NUMPAD_ENTER->{
+            if(event.action==KeyEvent.ACTION_UP && !event.isCanceled)cards.getOrNull(selected)?.performClick()
+            true
+        }
+        KeyEvent.KEYCODE_BACK->{if(event.action==KeyEvent.ACTION_UP && !event.isCanceled)dismiss();true}
+        else->false
+    }
+    override fun dispatchKeyEvent(event:KeyEvent):Boolean=handleKeyEvent(event) || super.dispatchKeyEvent(event)
+    override fun onWindowFocusChanged(hasWindowFocus:Boolean){
+        super.onWindowFocusChanged(hasWindowFocus)
+        if(hasWindowFocus)post{focusCard(selected)}
     }
     private fun select(index:Int){
         if(selectionReady && index==selected)return

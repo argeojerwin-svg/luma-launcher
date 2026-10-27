@@ -1,4 +1,9 @@
 <resources>
+    <string name="wallpaper_dream_name">Luma wallpaper</string>
+    <string name="local_menu_channel">Projector-only Menu</string>
+    <string name="local_menu_title">Luma remote menu active</string>
+    <string name="local_menu_notification">Menu works in apps without a PC. Tap to manage.</string>
+    <string name="local_menu_waiting">Waiting for this projector’s local debugging service. Tap to manage.</string>
     <string name="global_control_name">Luma Control Centre in apps</string>
     <string name="global_control_description">Optional Menu-button shortcut that opens Luma Control Centre over other apps. Luma does not read their screen content.</string>
 </resources>

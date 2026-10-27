@@ -1,0 +1,16 @@
+<resources>
+    <string name="luma_keyboard_name">Luma Keyboard</string>
+    <string name="keyboard_go">Go</string>
+    <string name="video_search_unavailable">Could not open search in this app. Please open the app and try again.</string>
+    <string name="keyboard_next">Next</string>
+    <string name="keyboard_send">Send</string>
+    <string name="keyboard_search">Search</string>
+    <string name="keyboard_preparing">Preparing QR code…</string>
+    <string name="keyboard_secure">Secure field\nRemote typing only</string>
+    <string name="keyboard_no_shared_text">This app does not share its text\nUse the remote keyboard</string>
+    <string name="keyboard_field_changed">Field changed · scan a new code</string>
+    <string name="keyboard_expired">Code expired\nSelect New QR code</string>
+    <string name="phone_keyboard_connected">Phone connected\nTap Go on your phone when finished.</string>
+    <string name="phone_keyboard_ready">Same Wi-Fi · no phone app\nCode lasts 10 minutes.</string>
+    <string name="phone_keyboard_unavailable">Phone typing unavailable\nYou can still use QWERTY.</string>
+</resources>

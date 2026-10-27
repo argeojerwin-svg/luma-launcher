@@ -94,10 +94,18 @@ class GlobalControlService:AccessibilityService(){
                 return super.dispatchKeyEvent(event)
             }
         }
+        val videoAction=PanelAction("Keyboard"){
+            close(false)
+            startActivity(Intent(this,GlobalControlActivity::class.java).apply{
+                putExtra(GlobalControlActivity.EXTRA_SOURCE_PACKAGE,foregroundPackage)
+                putExtra(GlobalControlActivity.EXTRA_OPEN_KEYBOARD,true)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            })
+        }
         val actions=listOf(
             PanelAction("All Apps"){openLuma("all_apps")},
             PanelAction("App Switcher"){openLuma("app_switcher")},
-            PanelAction("Search"){openLuma("search")},
+            videoAction,
             PanelAction("Audio settings"){openSystem(Settings.ACTION_SOUND_SETTINGS)},
             PanelAction("Wallpaper"){openLuma("wallpaper")},
             PanelAction("Start screensaver"){openLuma("screensaver")},

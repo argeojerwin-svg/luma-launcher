@@ -31,8 +31,12 @@ class WallpaperRepository(private val context: Context) {
         }
     }
     private fun decode(uri: String, maxEdge: Int): Bitmap {
-        fun stream() = if (uri.isBlank()) context.resources.openRawResource(R.raw.fjord)
-            else context.contentResolver.openInputStream(Uri.parse(uri)) ?: error("Image unavailable")
+        fun stream() = when (uri) {
+            "" -> context.resources.openRawResource(R.raw.fjord)
+            "builtin:blue_hour_coast" -> context.resources.openRawResource(R.raw.blue_hour_coast)
+            "builtin:midnight_fjord" -> context.resources.openRawResource(R.raw.midnight_fjord)
+            else -> context.contentResolver.openInputStream(Uri.parse(uri)) ?: error("Image unavailable")
+        }
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         stream().use { BitmapFactory.decodeStream(it, null, bounds) }
         require(bounds.outWidth > 0 && bounds.outHeight > 0)
@@ -85,6 +89,7 @@ class WallpaperView(context: Context) : View(context) {
         set(value){if(field!=value){field=value;invalidate()}}
     var zoom = 1f
     var drift = 0f
+    var driftY = 0f
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
     private val destination=RectF()
     private var shade: Shader?=null
@@ -117,7 +122,9 @@ class WallpaperView(context: Context) : View(context) {
         val scale=max(width.toFloat()/b.width,height.toFloat()/b.height)*zoom
         val w=b.width*scale;val h=b.height*scale
         paint.alpha=a; paint.shader=null
-        destination.set((width-w)/2+drift,(height-h)/2,(width+w)/2+drift,(height+h)/2);c.drawBitmap(b,null,destination,paint)
+        val x=drift.coerceIn(-max(0f,(w-width)/2),max(0f,(w-width)/2))
+        val y=driftY.coerceIn(-max(0f,(h-height)/2),max(0f,(h-height)/2))
+        destination.set((width-w)/2+x,(height-h)/2+y,(width+w)/2+x,(height+h)/2+y);c.drawBitmap(b,null,destination,paint)
     }
     fun releaseTransition() {fade?.cancel();fade=null;old=null;blend=1f}
     override fun onDetachedFromWindow() { releaseTransition(); super.onDetachedFromWindow() }
