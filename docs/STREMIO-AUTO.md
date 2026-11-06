@@ -3,7 +3,7 @@
 ## Install on another projector
 
 1. Download **Luma-Stremio-Auto-Preview.apk** from the
-   [Stremio Auto preview release](https://github.com/argeojerwin-svg/luma-launcher/releases/tag/stremio-auto-preview-1).
+   [Stremio Auto preview release](https://github.com/argeojerwin-svg/luma-launcher/releases/tag/stremio-auto-preview-2).
    This is a contributor preview based on upstream Luma 1.0.13, not an official
    upstream release. The ordinary upstream 1.0.13 APK does not include Auto.
 2. Install the preview over the existing Luma app. It uses the same signing
@@ -111,3 +111,40 @@ Protocol compatibility: output only `description`, removing an upstream `title`.
 Stremio's deserializer treats `title` as an alias for `description`; including
 both makes it reject the response. The original source's playback identity and
 other transport fields are preserved.
+
+## Next-episode autoplay
+
+Auto streams now carry their own stable `behaviorHints.bingeGroup`:
+`dev.luma.stremio.auto.v1`. Stremio can match Auto for the next episode even when
+its chosen quality/provider changes. Original provider hints such as filename
+and proxy headers remain intact. No other addon's binge group is reused.
+
+After updating, select an Auto stream once from the source list. An episode
+already started using the old build has no Auto binge group saved, so it may
+still show source choices until selected again. Stremio's Auto-play next episode
+setting must be enabled for end-of-episode progression. Manual Next Episode
+matching also remains controlled by Stremio. If Auto returns no compatible source
+or the provider fails, source selection/buffering can still occur.
+
+## Startup recovery update, 3 November 2026
+
+The on-device Auto setting and Stremio add-on entry can remain enabled while
+Android has not started the local service. Startup previously ignored a failed
+or null service start. Auto now checks readiness and makes up to five startup
+attempts over bounded delays of 2, 5, 15, 30 and 60 seconds. Returning to Luma
+also retries startup; disabling Auto cancels pending recovery. Startup exhaustion
+is reported in Auto's status instead of silently presenting an enabled-but-dead
+service. This does not require a PC or a new manifest installation.
+
+Six additional tests cover rejected and accepted-but-not-ready starts, readiness,
+disable/cancel, superseded callbacks and bounded exhaustion. All 68 unit tests,
+release lint and the signed release build passed. These fixes are included in
+preview 2; preview 1 does not contain them.
+
+Device verification: the updated APK passed two consecutive projector restarts. On each restart Auto started as a foreground service and its unchanged local manifest answered before any manual service start or registration command. After removing PC forwarding, Stremio displayed the Luma Auto source filter. Existing source configuration, local URL and Next Episode identifier were preserved.
+
+The user also confirmed that Next Episode starts the next Auto stream directly.
+These on-device checks used the local 1.0.12-based build. The published preview
+uses upstream 1.0.13 with the same Auto fixes and has separate build, unit-test,
+lint and signing checks; that exact APK has not been installed for another
+projector playback/reboot test.

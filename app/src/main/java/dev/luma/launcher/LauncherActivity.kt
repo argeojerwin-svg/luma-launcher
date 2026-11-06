@@ -123,6 +123,7 @@ class LauncherActivity : Activity() {
     }
     override fun onResume() {
         super.onResume();weather.start();resumed=true;immersive();home.alpha=1f;home.scaleX=1f;home.scaleY=1f
+        StremioAutoService.resume(this)
         stopNetworkObserve=NetworkState.observe(this){updateClock();panel?.setNetworkStatus(it.detail)}
         main.removeCallbacks(clockTick);main.post(clockTick);resetInactivity();refreshApps();home.reloadArtwork()
         loadContinue();refreshWatchNext();syncContinue(false)

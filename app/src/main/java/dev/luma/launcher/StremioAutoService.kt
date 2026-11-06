@@ -5,6 +5,8 @@ import android.content.*
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
+import android.os.Handler
+import android.os.Looper
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -38,6 +40,7 @@ class StremioAutoService:Service(){
         if(server==null)try {
             val listener=ServerSocket().apply{reuseAddress=true;bind(InetSocketAddress(InetAddress.getByName("127.0.0.1"),PORT),4)}
             server=listener;running=true
+            available=true
             Thread({while(running)try{
                 val socket=listener.accept().apply{soTimeout=5000}
                 try{handlers.execute{socket.use{runCatching{serve(it)}}}}catch(_:RejectedExecutionException){socket.close()}
@@ -126,8 +129,10 @@ class StremioAutoService:Service(){
             // Stremio treats title as an alias for description; both together fail deserialization.
             stream.remove("title")
             stream.put("description",explanation)
-            // Do not reuse another provider's binge group for this recommendation policy.
-            stream.optJSONObject("behaviorHints")?.remove("bingeGroup")
+            // Follow Auto across episodes even when the selected provider or quality changes.
+            // Preserve filename/proxy/subtitle hints, but never inherit the provider's group.
+            val hints=stream.optJSONObject("behaviorHints")?:JSONObject()
+            stream.put("behaviorHints",hints.put("bingeGroup","dev.luma.stremio.auto.v1"))
             response.put(stream)
         }
         val status=if(best==null)"No compatible sources available. Use the original source list."
@@ -144,10 +149,12 @@ class StremioAutoService:Service(){
         }
     }
     override fun onBind(intent:Intent?):IBinder?=null
-    override fun onDestroy(){running=false;runCatching{server?.close()};handlers.shutdownNow();network.shutdownNow();super.onDestroy()}
+    override fun onDestroy(){available=false;running=false;runCatching{server?.close()};handlers.shutdownNow();network.shutdownNow();super.onDestroy()}
     companion object {
         private const val PORT=19765
         private const val CHANNEL="luma-stremio-auto"
+        @Volatile private var available=false
+        private var recovery:AutoStartRecovery?=null
         private fun prefs(c:Context)=c.getSharedPreferences("stremio_auto",Context.MODE_PRIVATE)
         fun enabled(c:Context)=prefs(c).getBoolean("enabled",false)
         @Synchronized private fun token(c:Context):String=prefs(c).getString("token",null)?:UUID.randomUUID().toString().also{prefs(c).edit().putString("token",it).commit()}
@@ -166,12 +173,26 @@ class StremioAutoService:Service(){
         }
         fun setEnabled(c:Context,on:Boolean){
             prefs(c).edit().putBoolean("enabled",on).apply()
-            if(on)resume(c)else c.stopService(Intent(c,StremioAutoService::class.java))
+            if(on)resume(c)else {recovery?.cancel();c.stopService(Intent(c,StremioAutoService::class.java))}
         }
-        fun resume(c:Context){if(enabled(c))runCatching{
-            val intent=Intent(c,StremioAutoService::class.java)
-            if(Build.VERSION.SDK_INT>=26)c.startForegroundService(intent)else c.startService(intent)
-        }}
+        fun resume(c:Context){
+            val app=c.applicationContext
+            val main=Handler(Looper.getMainLooper())
+            main.post{
+                android.util.Log.i("LumaAuto","Startup requested: enabled=${enabled(app)} ready=$available")
+                if(!enabled(app) || available)return@post
+                val current=recovery?:AutoStartRecovery({enabled(app)},{available},{
+                    android.util.Log.i("LumaAuto","Starting local Auto service")
+                    val intent=Intent(app,StremioAutoService::class.java)
+                    val component=if(Build.VERSION.SDK_INT>=26)app.startForegroundService(intent)else app.startService(intent)
+                    check(component!=null){"Android has not registered the Auto service yet"}
+                },{delay,task->main.postDelayed({task()},delay)},{
+                    prefs(app).edit().putString("status","Auto could not start. Reopen Luma or toggle Auto off and on to retry.").apply()
+                    android.util.Log.w("LumaAuto","Startup recovery exhausted; retry when Luma resumes")
+                }).also{recovery=it}
+                current.resume()
+            }
+        }
         private fun request(address:String,limit:Int,timeout:Int):ByteArray {
             val connection=URL(address).openConnection() as HttpURLConnection
             connection.connectTimeout=timeout;connection.readTimeout=timeout
