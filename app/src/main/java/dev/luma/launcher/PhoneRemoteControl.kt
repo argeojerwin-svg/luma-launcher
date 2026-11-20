@@ -10,11 +10,19 @@ object PhoneRemoteControl {
         val app=context.applicationContext
         if(!FastPhoneInput.prepare(app))return null
         return {command->
-            if(command=="apps" || command=="recents" || command=="home"){
+            if(command=="controlCentre"){
+                runCatching{
+                    app.startActivity(android.content.Intent(app,GlobalControlActivity::class.java).apply{
+                        addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                    })
+                    true
+                }.getOrDefault(false)
+            }else if(command=="apps" || command=="recents" || command=="home" || command=="appSwitcher"){
                 runCatching{
                     app.startActivity(android.content.Intent(app,LauncherActivity::class.java).apply{
                         action=if(command=="home") android.content.Intent.ACTION_MAIN else LauncherActivity.ACTION_GLOBAL_CONTROL
-                        if(command!="home") putExtra(LauncherActivity.EXTRA_GLOBAL_TARGET,if(command=="settings") "projector_settings" else "all_apps")
+                        if(command!="home") putExtra(LauncherActivity.EXTRA_GLOBAL_TARGET,
+                            if(command=="appSwitcher") "app_switcher" else "all_apps")
                         addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK or android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP or android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP)
                     })
                     true

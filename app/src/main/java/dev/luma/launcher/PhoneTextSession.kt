@@ -46,6 +46,7 @@ class PhoneTextSession(
     @Volatile private var active=true
     @Volatile private var text=clean(initial,limit)
     private val edits=Any()
+    private val webOrigin=ThreadLocal<String?>()
     private var submitted=false
     @Volatile private var textEnabled=true
     fun resumeText(value:String){synchronized(edits){if(!submitted){text=clean(value,limit);textEnabled=true}}}
@@ -58,7 +59,8 @@ class PhoneTextSession(
             try {
                 while(isOpen){
                     try {
-                        val socket=server.accept().apply{soTimeout=2000}
+                        // Tiny interactive replies must not wait for Nagle/delayed ACK timers.
+                        val socket=server.accept().apply{soTimeout=2000;tcpNoDelay=true}
                         sockets.add(socket)
                         try { workers.execute{socket.use{runCatching{while(isOpen)serve(it)}};sockets.remove(socket)} }
                         catch(_:RuntimeException){sockets.remove(socket);socket.close()}
@@ -76,6 +78,7 @@ class PhoneTextSession(
     fun updateText(value:String){if(isOpen)text=clean(value,limit)}
 
     private fun serve(socket:Socket){
+        webOrigin.remove()
         val input=socket.getInputStream()
         val header=readHeader(input)?:throw EOFException()
         val lines=header.split("\r\n")
@@ -102,6 +105,17 @@ class PhoneTextSession(
             reply(socket,403,message)
         }
         if(headers["host"]!=origin.removePrefix("http://")){reject("Host not allowed");return}
+        val requestedOrigin=headers["origin"]
+        val hostedRemote=requestedOrigin==WEB_REMOTE_ORIGIN && textTarget!=null && onRemote!=null
+        if(requestedOrigin!=null && requestedOrigin!=origin && !hostedRemote){reject("Origin not allowed");return}
+        if(hostedRemote)webOrigin.set(requestedOrigin)
+        if(method=="OPTIONS"){
+            val allowedHeaders=headers["access-control-request-headers"].orEmpty().split(',').map{it.trim().lowercase()}.filter{it.isNotEmpty()}
+            if(!hostedRemote || path !in listOf("/state","/text","/submit","/remote","/disconnect") ||
+                headers["access-control-request-method"] !in listOf("GET","POST") ||
+                allowedHeaders.any{it !in listOf("x-luma-token","content-type")}){reject("Preflight not allowed");return}
+            reply(socket,204,"");return
+        }
         if(method=="GET" && path=="/"){
             reply(socket,200,page.replace("__CSP_NONCE__",nonce),"text/html; charset=utf-8");return
         }
@@ -109,7 +123,6 @@ class PhoneTextSession(
         if(!MessageDigest.isEqual(token.toByteArray(Charsets.UTF_8),supplied.toByteArray(Charsets.UTF_8))){
             reject("Scan the current QR code on your TV");return
         }
-        if(headers["origin"]!=null && headers["origin"]!=origin){reject("Origin not allowed");return}
         val editor=if(textTarget==null)this else textTarget.invoke()?.takeIf{it.isOpen}
         if(method=="GET" && path=="/state"){
             val canType=editor?.let{it.textEnabled && !it.submitted}==true
@@ -126,7 +139,7 @@ class PhoneTextSession(
             catch(_:java.nio.charset.CharacterCodingException){reply(socket,400,"Invalid text");return}
         if(path=="/disconnect"){reply(socket,200,"Disconnected");if(textTarget==null)close();return}
         if(path=="/remote"){
-            val valid=value in setOf("up","down","left","right","ok","back","home","apps","recents","settings","volumeUp","volumeDown","mute","power","scrollUp","scrollDown") ||
+            val valid=value in setOf("up","down","left","right","ok","back","home","apps","recents","settings","controlCentre","appSwitcher","volumeUp","volumeDown","mute","power","scrollUp","scrollDown") ||
                 Regex("(move|tap):[0-9]{1,4},[0-9]{1,4}").matches(value) && value.substringAfter(':').split(',').all{it.toInt() in 0..1000}
             if(!valid){reply(socket,400,"Unknown control");return}
             if(onRemote?.invoke(value)==true)reply(socket,200,"OK") else reply(socket,409,"Phone remote is unavailable on this projector")
@@ -164,12 +177,14 @@ class PhoneTextSession(
     }
     private fun reply(socket:Socket,status:Int,body:String,type:String="text/plain; charset=utf-8"){
         val bytes=body.toByteArray(Charsets.UTF_8)
-        val phrase=when(status){200->"OK";400->"Bad Request";403->"Forbidden";404->"Not Found";410->"Gone";409->"Conflict";else->"Payload Too Large"}
+        val phrase=when(status){200->"OK";204->"No Content";400->"Bad Request";403->"Forbidden";404->"Not Found";410->"Gone";409->"Conflict";else->"Payload Too Large"}
+        val cors=webOrigin.get()?.let{"Access-Control-Allow-Origin: $it\r\nVary: Origin\r\nAccess-Control-Allow-Methods: GET, POST, OPTIONS\r\nAccess-Control-Allow-Headers: X-Luma-Token, Content-Type\r\nAccess-Control-Allow-Private-Network: true\r\nAccess-Control-Max-Age: 600\r\n"}.orEmpty()
         val headers="HTTP/1.1 $status $phrase\r\nContent-Type: $type\r\nContent-Length: ${bytes.size}\r\n"+
             "Cache-Control: no-store\r\nReferrer-Policy: no-referrer\r\nX-Content-Type-Options: nosniff\r\nX-Frame-Options: DENY\r\n"+
             "Content-Security-Policy: default-src 'none'; script-src 'nonce-$nonce'; style-src 'nonce-$nonce'; connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'\r\n"+
-            "Connection: keep-alive\r\nKeep-Alive: timeout=2, max=100\r\n\r\n"
-        socket.getOutputStream().apply{write(headers.toByteArray(Charsets.US_ASCII));write(bytes);flush()}
+            cors+"Connection: keep-alive\r\nKeep-Alive: timeout=2, max=100\r\n\r\n"
+        val headerBytes=headers.toByteArray(Charsets.US_ASCII)
+        socket.getOutputStream().apply{write(headerBytes+bytes);flush()}
     }
     @Synchronized override fun close(){
         if(!active)return
@@ -179,6 +194,7 @@ class PhoneTextSession(
         workers.shutdownNow()
     }
     companion object {
+        const val WEB_REMOTE_ORIGIN="https://argeojerwin-svg.github.io"
         private fun randomToken(bytes:Int)=ByteArray(bytes).also{SecureRandom().nextBytes(it)}.joinToString(""){"%02x".format(it.toInt() and 255)}
         internal fun clean(value:String,limit:Int):String{
             val result=value.replace('\r',' ').replace('\n',' ').replace('\t',' ').filterNot{it.isISOControl()}.take(limit)

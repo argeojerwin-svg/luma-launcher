@@ -24,7 +24,7 @@
     #status { min-height: 24px; margin: 16px 0 0; font-size: 14px; color: #a8d9c3; }
     #status.error { color: #f1bf98; }
     .remote { margin-top: 24px; padding: 20px; border: 1px solid #ffffff20; border-radius: 24px; background: #ffffff09; }
-    .remote-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .remote-heading { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; }
     .remote h2 { margin:0; }
     .pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-width: 300px; margin: auto; }
     .remote button { margin-top: 0; min-height: 52px; touch-action: manipulation; }
@@ -33,6 +33,7 @@
     .utility-head button, .volume button { width:44px; min-height:44px; padding:7px; background:#ffffff16; color:#edf5ff; border:1px solid #ffffff24; box-shadow:inset 0 1px 0 #ffffff22; }
     .utility-head button:active, .volume button:active { background:#ffffff30; transform:scale(.97); }
     .utility-head .power { color:#ffd4d4; font-size:22px; }
+    #controlCentre { touch-action:none; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
     .utility-head svg, .volume svg { width:22px; height:22px; vertical-align:middle; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
     .volume { display:flex; justify-content:center; gap:8px; margin:20px auto 22px; }
     .volume button { width:68px; font-size:23px; line-height:1; }
@@ -57,6 +58,7 @@
     <div class="remote-heading">
       <h2>Remote</h2>
       <div class="utility-head" aria-label="Projector controls">
+        <button type="button" id="controlCentre" data-command="controlCentre" aria-label="Control Centre. Hold for App Switcher." title="Control Centre · hold for App Switcher"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="7" rx="3.5"/><circle cx="7" cy="6.5" r="1"/><rect x="3" y="14" width="18" height="7" rx="3.5"/><circle cx="17" cy="17.5" r="1"/></svg></button>
         <button type="button" data-command="settings" aria-label="Projector settings" title="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2" fill="#263b59"/><circle cx="16" cy="12" r="2" fill="#263b59"/><circle cx="11" cy="18" r="2" fill="#263b59"/></svg></button>
         <button type="button" class="power" data-command="power" aria-label="Power" title="Power">⏻</button>
       </div>
@@ -138,7 +140,7 @@
   }
   input.addEventListener('input', () => {
     if (submitting || done) return;
-    pending = { value: input.value, submit: false }; clearTimeout(timer); timer = setTimeout(flush, 120);
+    pending = { value: input.value, submit: false }; clearTimeout(timer); timer = setTimeout(flush, 40);
   });
   document.querySelector('#form').addEventListener('submit', event => {
     event.preventDefault();
@@ -179,10 +181,35 @@
     return commandQueue;
   }
   remoteButtons.forEach(button => button.addEventListener('click', () => {
+    if (button.dataset.command === 'controlCentre') return;
     if (button.dataset.command === 'scrollUp' || button.dataset.command === 'scrollDown') return;
     if (button.dataset.command === 'power' && !confirm('Put the projector in standby? Use its physical remote to wake it.')) return;
     control(button.dataset.command);
   }));
+  const centreButton = document.querySelector('#controlCentre');
+  let centrePointer = null, centreTimer, centreHeld = false, centreStartX = 0, centreStartY = 0;
+  function cancelCentre() { clearTimeout(centreTimer); centrePointer = null; }
+  centreButton.addEventListener('contextmenu', event => event.preventDefault());
+  centreButton.addEventListener('pointerdown', event => {
+    if (!remoteReady || stopped || centrePointer !== null || !event.isPrimary || event.button !== 0) return;
+    centrePointer = event.pointerId; centreHeld = false;
+    centreStartX = event.clientX; centreStartY = event.clientY;
+    centreButton.setPointerCapture(event.pointerId);
+    centreTimer = setTimeout(() => {
+      if (centrePointer === event.pointerId) { centreHeld = true; control('appSwitcher'); }
+    }, 550);
+  });
+  centreButton.addEventListener('pointermove', event => {
+    if (centrePointer === event.pointerId && Math.hypot(event.clientX-centreStartX, event.clientY-centreStartY) > 12) cancelCentre();
+  });
+  centreButton.addEventListener('pointerup', event => {
+    if (centrePointer !== event.pointerId) return;
+    const held = centreHeld; cancelCentre();
+    if (!held) control('controlCentre');
+  });
+  centreButton.addEventListener('pointercancel', cancelCentre);
+  centreButton.addEventListener('lostpointercapture', cancelCentre);
+  centreButton.addEventListener('click', event => { if (event.detail === 0) control('controlCentre'); });
   document.querySelectorAll('[data-command="scrollUp"], [data-command="scrollDown"]').forEach(button => {
     let held = false, repeatTimer;
     const repeat = async () => {
