@@ -29,10 +29,14 @@ Screenshots show one tested setup. Installed apps, content, wallpaper, weather a
 - **Made for a remote:** D-pad navigation, animated focus, an editable dock, All Apps and app launching.
 - **Personal home screen:** custom tile identities, wallpapers, live weather with offline cache, clock and screensaver.
 - **Easier text entry:** a remote-friendly QWERTY keyboard and [QR phone typing](docs/PHONE-KEYBOARD.md) in launcher fields and standard Android app text fields, with a compact bottom overlay and no phone app required.
+- **Optional phone remote:** a [private local webpage](docs/PHONE-REMOTE.md) for D-pad, touchpad, scrolling, volume, mute, projector Settings, standby and Luma Home/Apps. Save its QR link to your phone's Home Screen; device support for local input varies.
+
 - **Liquid Glass-inspired design:** layered translucency, soft highlights and restrained motion inspired by the visual direction of tvOS 26, tuned for Android TV hardware.
 - **Quick access:** Control Centre and App Switcher. The optional [global Menu shortcut](docs/GLOBAL-MENU.md) depends on the TV's remote mapping and Accessibility support.
 - **Real Continue Watching:** Android TV Watch Next and supported Stremio entries, with provider links where available. Luma never invents playback history or progress.
 - **Easy recovery:** Luma does not remove your existing launcher. Android's Home App chooser and [ADB uninstall steps](docs/INSTALL.md) remain available.
+
+The phone remote is currently available in the source tree. The v1.0.13 release APK linked above predates this addition; build from the latest source or wait for a signed release containing it.
 
 ## Install
 

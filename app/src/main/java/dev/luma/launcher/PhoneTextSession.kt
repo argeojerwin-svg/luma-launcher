@@ -2,6 +2,7 @@ package dev.luma.launcher
 
 import java.io.ByteArrayOutputStream
 import java.io.Closeable
+import java.io.EOFException
 import java.io.InputStream
 import java.net.InetAddress
 import java.net.InetSocketAddress
@@ -27,13 +28,16 @@ class PhoneTextSession(
     private val onText:(String)->Unit,
     private val onExpired:()->Unit={},
     lifetimeMillis:Long=10*60*1000L,
-    private val onSubmit:(String)->Unit={}
+    private val onSubmit:(String)->Unit={},
+    private val onRemote:((String)->Boolean)?=null,
+    port:Int=0, pairingToken:String?=null,
+    private val textTarget:(()->PhoneTextSession?)?=null
 ):Closeable {
     init{require(limit in 1..2048);require(lifetimeMillis>0);require(address is java.net.Inet4Address)}
-    private val token=randomToken(24)
+    private val token=pairingToken?:randomToken(24)
     private val nonce=randomToken(16)
     private val deadline=System.nanoTime()+TimeUnit.MILLISECONDS.toNanos(lifetimeMillis)
-    private val server=ServerSocket().apply{reuseAddress=true;bind(InetSocketAddress(address,0));soTimeout=500}
+    private val server=ServerSocket().apply{reuseAddress=true;bind(InetSocketAddress(address,port));soTimeout=500}
     private val sockets=Collections.synchronizedSet(mutableSetOf<Socket>())
     private val workers=ThreadPoolExecutor(2,2,0L,TimeUnit.MILLISECONDS,ArrayBlockingQueue<Runnable>(8),
         {job->Thread(job,"Luma phone request").apply{isDaemon=true}})
@@ -43,6 +47,10 @@ class PhoneTextSession(
     @Volatile private var text=clean(initial,limit)
     private val edits=Any()
     private var submitted=false
+    @Volatile private var textEnabled=true
+    fun resumeText(value:String){synchronized(edits){if(!submitted){text=clean(value,limit);textEnabled=true}}}
+    fun detachText(){synchronized(edits){textEnabled=false;text=""}}
+    val hasRemote:Boolean get()=onRemote!=null
     val isOpen:Boolean get()=active && System.nanoTime()<deadline
 
     init {
@@ -52,7 +60,7 @@ class PhoneTextSession(
                     try {
                         val socket=server.accept().apply{soTimeout=2000}
                         sockets.add(socket)
-                        try { workers.execute{socket.use{runCatching{serve(it)}};sockets.remove(socket)} }
+                        try { workers.execute{socket.use{runCatching{while(isOpen)serve(it)}};sockets.remove(socket)} }
                         catch(_:RuntimeException){sockets.remove(socket);socket.close()}
                     }catch(_:SocketTimeoutException){/* Check expiry without holding a connection. */}
                 }
@@ -69,7 +77,7 @@ class PhoneTextSession(
 
     private fun serve(socket:Socket){
         val input=socket.getInputStream()
-        val header=readHeader(input)?:return
+        val header=readHeader(input)?:throw EOFException()
         val lines=header.split("\r\n")
         val request=lines.first().split(' ')
         if(request.size!=3){reply(socket,400,"Bad request");return}
@@ -102,23 +110,34 @@ class PhoneTextSession(
             reject("Scan the current QR code on your TV");return
         }
         if(headers["origin"]!=null && headers["origin"]!=origin){reject("Origin not allowed");return}
+        val editor=if(textTarget==null)this else textTarget.invoke()?.takeIf{it.isOpen}
         if(method=="GET" && path=="/state"){
-            reply(socket,200,"{\"title\":${json(title)},\"limit\":$limit,\"text\":${json(text)}}","application/json; charset=utf-8");return
+            val canType=editor?.let{it.textEnabled && !it.submitted}==true
+            reply(socket,200,"{\"title\":${json(editor?.title?:"Open a text field on the projector to type")},\"limit\":${editor?.limit?:limit},\"text\":${json(editor?.text.orEmpty())},\"textEnabled\":$canType,\"remote\":${onRemote!=null},\"permanent\":${textTarget!=null},\"editor\":${json(editor?.nonce.orEmpty())}}","application/json; charset=utf-8");return
         }
-        if(method!="POST" || path !in listOf("/text","/submit")){reply(socket,404,"Not found");return}
+        if(method!="POST" || path !in listOf("/text","/submit","/remote","/disconnect")){reply(socket,404,"Not found");return}
         val length=headers["content-length"]?.toIntOrNull()
-        if(headers.containsKey("transfer-encoding") || length==null || length !in 0..limit*4){
+        if(headers.containsKey("transfer-encoding") || length==null || length !in 0..maxOf(limit*4,128)){
             reply(socket,413,"Text is too long");return
         }
         val bytes=ByteArray(length);var read=0
         while(read<length){val count=input.read(bytes,read,length-read);if(count<0)return;read+=count}
         val value=try{Charsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT).decode(ByteBuffer.wrap(bytes)).toString()}
             catch(_:java.nio.charset.CharacterCodingException){reply(socket,400,"Invalid text");return}
-        if(value.length>limit){reply(socket,413,"Text is too long");return}
+        if(path=="/disconnect"){reply(socket,200,"Disconnected");if(textTarget==null)close();return}
+        if(path=="/remote"){
+            val valid=value in setOf("up","down","left","right","ok","back","home","apps","recents","settings","volumeUp","volumeDown","mute","power","scrollUp","scrollDown") ||
+                Regex("(move|tap):[0-9]{1,4},[0-9]{1,4}").matches(value) && value.substringAfter(':').split(',').all{it.toInt() in 0..1000}
+            if(!valid){reply(socket,400,"Unknown control");return}
+            if(onRemote?.invoke(value)==true)reply(socket,200,"OK") else reply(socket,409,"Phone remote is unavailable on this projector")
+            return
+        }
+        if(editor==null){reply(socket,409,"Open a text field on the projector first");return}
+        if(value.length>editor.limit){reply(socket,413,"Text is too long");return}
         if(!isOpen){reply(socket,410,"This code has expired");return}
-        val next=clean(value,limit)
-        synchronized(edits){
-            if(submitted || !isOpen){reply(socket,410,"This code has ended");return}
+        val next=clean(value,editor.limit)
+        with(editor){synchronized(edits){
+            if(submitted || !textEnabled || !isOpen){reply(socket,410,"This code has ended");return}
             if(path=="/submit"){
                 if(next.trim().isEmpty()){reply(socket,400,"Enter some text");return}
                 // Finish the response before the dialog callback closes this server's sockets.
@@ -129,7 +148,7 @@ class PhoneTextSession(
                 text=next;onText(next)
                 reply(socket,200,"Text sent")
             }
-        }
+        }}
     }
 
     private fun readHeader(input:InputStream):String?{
@@ -145,11 +164,11 @@ class PhoneTextSession(
     }
     private fun reply(socket:Socket,status:Int,body:String,type:String="text/plain; charset=utf-8"){
         val bytes=body.toByteArray(Charsets.UTF_8)
-        val phrase=when(status){200->"OK";400->"Bad Request";403->"Forbidden";404->"Not Found";410->"Gone";else->"Payload Too Large"}
+        val phrase=when(status){200->"OK";400->"Bad Request";403->"Forbidden";404->"Not Found";410->"Gone";409->"Conflict";else->"Payload Too Large"}
         val headers="HTTP/1.1 $status $phrase\r\nContent-Type: $type\r\nContent-Length: ${bytes.size}\r\n"+
             "Cache-Control: no-store\r\nReferrer-Policy: no-referrer\r\nX-Content-Type-Options: nosniff\r\nX-Frame-Options: DENY\r\n"+
             "Content-Security-Policy: default-src 'none'; script-src 'nonce-$nonce'; style-src 'nonce-$nonce'; connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'\r\n"+
-            "Connection: close\r\n\r\n"
+            "Connection: keep-alive\r\nKeep-Alive: timeout=2, max=100\r\n\r\n"
         socket.getOutputStream().apply{write(headers.toByteArray(Charsets.US_ASCII));write(bytes);flush()}
     }
     @Synchronized override fun close(){

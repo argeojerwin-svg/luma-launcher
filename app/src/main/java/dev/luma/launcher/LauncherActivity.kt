@@ -92,6 +92,7 @@ class LauncherActivity : Activity() {
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
         LocalMenuService.resumeIfEnabled(this)
+        PhoneRemoteService.resume(this)
         if(intent?.action==ACTION_GLOBAL_CONTROL)pendingGlobalTarget=intent.getStringExtra(EXTRA_GLOBAL_TARGET)
         window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
         immersive()
@@ -121,7 +122,7 @@ class LauncherActivity : Activity() {
         if(resumed){loadContinue();cinematic?.updateMusic(continueItems)}
     }
     override fun onResume() {
-        super.onResume();weather.start();resumed=true;immersive();home.alpha=1f;home.scaleX=1f;home.scaleY=1f
+        super.onResume();main.post{PhoneRemoteService.resume(this)};weather.start();resumed=true;immersive();home.alpha=1f;home.scaleX=1f;home.scaleY=1f
         stopNetworkObserve=NetworkState.observe(this){updateClock();panel?.setNetworkStatus(it.detail)}
         main.removeCallbacks(clockTick);main.post(clockTick);resetInactivity();refreshApps();home.reloadArtwork()
         loadContinue();refreshWatchNext();syncContinue(false)
@@ -175,7 +176,8 @@ class LauncherActivity : Activity() {
         pendingGlobalTarget=null
         closePanel(false);saver.stop(false)
         when(target){
-            "all_apps"->home.showLibrary(installed)
+            "all_apps"->{searchDialog?.dismiss();folderNameDialog?.dismiss();home.showLibrary(installed)}
+            "phone_remote"->{PhoneRemoteService.enable(this);main.postDelayed({searchApps()},800)}
             "app_switcher"->appSwitcher()
             "search"->searchApps()
             "wallpaper"->wallpaperMenu()
@@ -637,8 +639,22 @@ class LauncherActivity : Activity() {
             action("Restore default appearance"){preferences.resetAppearance();loadedWallpaper="\u0000";rebuild();settings(14)},
             action("Weather · ${weather.location}  ›"){weatherSettings()},
             action("Recently Used · ${if(RecentApps.enabled(preferences))"On" else "Off"}  ›"){recentSettings()},
-            action("Continue Watching · ${if(!trakt.connected)"Not connected" else if(trakt.cached.isEmpty())"Unavailable" else "Ready"}  ›"){continueSettings()}
+            action("Continue Watching · ${if(!trakt.connected)"Not connected" else if(trakt.cached.isEmpty())"Unavailable" else "Ready"}  ›"){continueSettings()},
+            action("Phone remote · ${if(PhoneRemoteService.enabled(this))"On" else "Off"}  ›"){phoneRemoteSettings()}
         ),back={controlCentre()},focus=focus)
+    }
+    private fun phoneRemoteSettings(){
+        showPanel("Phone remote",listOf(
+            action("Phone remote · ${if(PhoneRemoteService.enabled(this))"On" else "Off"}"){
+                if(PhoneRemoteService.enabled(this))PhoneRemoteService.disable(this) else PhoneRemoteService.enable(this)
+                phoneRemoteSettings()
+            },
+            action("Show private QR link  ›"){
+                if(!PhoneRemoteService.enabled(this))PhoneRemoteService.enable(this)
+                main.postDelayed({searchApps()},800)
+            },
+            action("Back"){settings(18)}
+        ),"Save the scanned page to your phone's Home Screen. Keep its link private and use the same Wi-Fi.",back={settings(18)})
     }
     private fun continueSettings(){
         val cached=trakt.cached
@@ -829,6 +845,14 @@ class LauncherActivity : Activity() {
                 val intent=Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                     android.net.Uri.parse("package:$packageName"))
                 if(!openIntent(intent,false))openSettings(Settings.ACTION_MANAGE_APPLICATIONS_SETTINGS)
+            },
+            action("Phone remote · ${if(PhoneRemoteService.enabled(this))"On" else "Off"}  ›"){
+                if(PhoneRemoteService.enabled(this)){PhoneRemoteService.disable(this);globalControlSettings()}
+                else {PhoneRemoteService.enable(this);main.postDelayed({searchApps()},800)}
+            },
+            action("Show phone remote QR  ›"){
+                if(!PhoneRemoteService.enabled(this))PhoneRemoteService.enable(this)
+                main.postDelayed({searchApps()},800)
             },
             action("Open Android Accessibility settings  ›"){openSettings(Settings.ACTION_ACCESSIBILITY_SETTINGS)},
             action("Back"){settings(9)}

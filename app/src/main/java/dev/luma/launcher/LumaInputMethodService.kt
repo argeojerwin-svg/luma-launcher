@@ -262,7 +262,7 @@ class LumaInputMethodService:InputMethodService(){
         if(currentInputEditorInfo?.imeOptions?.and(EditorInfo.IME_MASK_ACTION)!=EditorInfo.IME_ACTION_NEXT)requestHideSelf(0)
     }
     private fun stopPhone(){
-        generation++;session?.close();session=null
+        generation++;session?.let{PhoneRemoteControl.detach(it)};session=null
         if(::qr.isInitialized){qr.setImageDrawable(null);qr.tag=null;qr.visibility=View.INVISIBLE}
         if(::preview.isInitialized)preview.setText("")
     }
@@ -284,15 +284,17 @@ class LumaInputMethodService:InputMethodService(){
                     if(editing && generation==request){if(replaceFromPhone(value))status.setText(R.string.phone_keyboard_connected) else {stopPhone();status.setText(R.string.keyboard_field_changed)}}
                 }},onExpired={main.post{if(generation==request){stopPhone();status.setText(R.string.keyboard_expired)}}},onSubmit={value->main.post{
                     if(editing && generation==request && replaceFromPhone(value))confirm()
-                }})
+                }},onRemote=PhoneRemoteControl.callback(this))
+                PhoneRemoteControl.register(next)
                 created=next
-                val matrix=QRCodeWriter().encode(next.url,BarcodeFormat.QR_CODE,360,360,mapOf(EncodeHintType.MARGIN to 3))
+                val phoneUrl=PhoneRemoteService.url(this)?:next.url
+                val matrix=QRCodeWriter().encode(phoneUrl,BarcodeFormat.QR_CODE,360,360,mapOf(EncodeHintType.MARGIN to 3))
                 val pixels=IntArray(matrix.width*matrix.height){i->if(matrix[i%matrix.width,i/matrix.width])Color.BLACK else Color.WHITE}
                 next to Bitmap.createBitmap(pixels,matrix.width,matrix.height,Bitmap.Config.ARGB_8888)
             }
             main.post{
                 if(!editing || generation!=request){created?.close();return@post}
-                result.onSuccess{(next,bitmap)->session=next;next.updateText(snapshot()?:initial);qr.setImageBitmap(bitmap);qr.tag=next.url;qr.visibility=View.VISIBLE;status.setText(R.string.phone_keyboard_ready)}
+                result.onSuccess{(next,bitmap)->session=next;next.updateText(snapshot()?:initial);qr.setImageBitmap(bitmap);qr.tag=PhoneRemoteService.url(this)?:next.url;qr.visibility=View.VISIBLE;status.setText(R.string.phone_keyboard_ready)}
                     .onFailure{created?.close();status.setText(R.string.phone_keyboard_unavailable)}
             }
         }

@@ -75,7 +75,7 @@ object GlassNameDialog {
         save.nextFocusRightId=cancel.id;cancel.nextFocusLeftId=save.id
 
         fun stopSession(message:String){
-            generation++;session?.close();session=null;qr.setImageDrawable(null);qr.tag=null;qr.visibility=View.INVISIBLE
+            generation++;session?.let{PhoneRemoteControl.detach(it)};session=null;qr.setImageDrawable(null);qr.tag=null;qr.visibility=View.INVISIBLE
             status.text=message
         }
         fun startSession(){
@@ -98,15 +98,17 @@ object GlassNameDialog {
                         if(!disposed && request==generation && dialog.isShowing && session?.isOpen==true){
                             field.setText(incoming);field.setSelection(field.length());save.performClick()
                         }
-                    }})
+                    }},onRemote=PhoneRemoteControl.callback(activity))
+                    PhoneRemoteControl.register(next)
                     created=next
-                    val matrix=QRCodeWriter().encode(next.url,BarcodeFormat.QR_CODE,360,360,mapOf(EncodeHintType.MARGIN to 3))
+                    val phoneUrl=PhoneRemoteService.url(activity)?:next.url
+                val matrix=QRCodeWriter().encode(phoneUrl,BarcodeFormat.QR_CODE,360,360,mapOf(EncodeHintType.MARGIN to 3))
                     val pixels=IntArray(matrix.width*matrix.height){index->if(matrix[index%matrix.width,index/matrix.width])Color.BLACK else Color.WHITE}
                     next to Bitmap.createBitmap(pixels,matrix.width,matrix.height,Bitmap.Config.ARGB_8888)
                 }
                 main.post{
                     if(disposed || request!=generation || !dialog.isShowing){created?.close();return@post}
-                    result.onSuccess{(next,bitmap)->session=next;next.updateText(field.text.toString());qr.setImageBitmap(bitmap);qr.tag=next.url;qr.visibility=View.VISIBLE;status.setText(R.string.phone_keyboard_ready)}
+                    result.onSuccess{(next,bitmap)->session=next;next.updateText(field.text.toString());qr.setImageBitmap(bitmap);qr.tag=PhoneRemoteService.url(activity)?:next.url;qr.visibility=View.VISIBLE;status.setText(R.string.phone_keyboard_ready)}
                         .onFailure{created?.close();status.text=if(it is IllegalStateException)it.message else activity.getString(R.string.phone_keyboard_unavailable)}
                 }
             }
@@ -120,9 +122,14 @@ object GlassNameDialog {
         val lifecycle=object:Application.ActivityLifecycleCallbacks{
             override fun onActivityCreated(a:Activity,state:Bundle?){}
             override fun onActivityStarted(a:Activity){}
-            override fun onActivityResumed(a:Activity){if(a===activity && dialog.isShowing && !disposed)startSession()}
+            override fun onActivityResumed(a:Activity){if(a===activity && dialog.isShowing && !disposed){
+                if(session?.isOpen==true)session?.resumeText(field.text.toString()) else startSession()
+            }}
             override fun onActivityPaused(a:Activity){}
-            override fun onActivityStopped(a:Activity){if(a===activity && !disposed)stopSession("Phone typing paused\nSelect New QR code.")}
+            override fun onActivityStopped(a:Activity){if(a===activity && !disposed){
+                if(session?.isOpen==true && session?.hasRemote==true)session?.detachText()
+                else stopSession("Phone typing paused\nSelect New QR code.")
+            }}
             override fun onActivitySaveInstanceState(a:Activity,state:Bundle){}
             override fun onActivityDestroyed(a:Activity){if(a===activity)dialog.dismiss()}
         }

@@ -42,7 +42,7 @@ This is a menu shortcut for search, not an automatic replacement of the apps' bu
 
 Each visible editor has a fresh random connection token and local port. Codes expire after 10 minutes. New QR code replaces the link. Hiding the keyboard, changing fields or apps, closing a Luma editor, or stopping its activity closes the old session.
 
-Phone typing is unavailable for password fields, text over 2048 characters, and editors that do not expose a complete text snapshot through Android. Remote input remains available. Phone input replaces the current field text; it is not a phone-wide remote control.
+Phone typing is unavailable for password fields, text over 2048 characters, and editors that do not expose a complete text snapshot through Android. Phone input replaces the current field text. The separate, optional [phone remote](PHONE-REMOTE.md) provides a reusable private link for navigation and connects to an active text field when one is available.
 
 Phone typing uses temporary local HTTP and no cloud service. Guest Wi-Fi isolation or VPN routing can block it. Use a trusted local network. No text, pairing token or typing history is logged or saved by the keyboard. See [privacy](PRIVACY.md).
 
