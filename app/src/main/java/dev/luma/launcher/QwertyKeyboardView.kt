@@ -77,8 +77,8 @@ class QwertyKeyboardView(context:Context,private val field:EditText,private val 
     fun connectFocus(save:View,cancel:View,phone:View){this.save=save;this.cancel=cancel;this.phone=phone;wireFocus()}
     private fun wireFocus(){
         rows.forEachIndexed{rowIndex,keys->keys.forEachIndexed{index,key->
-            key.view.nextFocusLeftId=keys.getOrElse((index-1).coerceAtLeast(0)){key}.view.id
-            key.view.nextFocusRightId=keys.getOrNull(index+1)?.view?.id?:phone?.id?:key.view.id
+            key.view.nextFocusLeftId=keys[(index+keys.size-1)%keys.size].view.id
+            key.view.nextFocusRightId=keys[(index+1)%keys.size].view.id
             key.view.nextFocusUpId=if(rowIndex==0)(if(field.isFocusable)field.id else key.view.id) else rows[rowIndex-1].minByOrNull{kotlin.math.abs(it.center-key.center)}!!.view.id
             key.view.nextFocusDownId=if(rowIndex==rows.lastIndex)(if(key.center<.5f)save else cancel)?.id?:key.view.id
                 else rows[rowIndex+1].minByOrNull{kotlin.math.abs(it.center-key.center)}!!.view.id

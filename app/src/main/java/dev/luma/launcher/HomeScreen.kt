@@ -26,6 +26,7 @@ class AppTile(context: Context, val item: AppEntry?, val label: String, private 
     }
     private var unit=1f
     private var focusProgress=0f
+    private var pointerInside=false
     private val spring=Spring { value -> renderFocus(value) }
     fun renderFocus(value:Float){
         focusProgress=value
@@ -50,6 +51,19 @@ class AppTile(context: Context, val item: AppEntry?, val label: String, private 
             if(!externalFocusMotion)spring.to(if(focused)1f else 0f)
             selected?.invoke(focused)
         }
+    }
+    override fun dispatchHoverEvent(event:MotionEvent):Boolean{
+        val left=icon.left+icon.translationX+icon.width*(1f-icon.scaleX)/2f
+        val top=icon.top+icon.translationY+icon.height*(1f-icon.scaleY)/2f
+        val inside=event.actionMasked!=MotionEvent.ACTION_HOVER_EXIT &&
+            event.x>=left && event.x<left+icon.width*icon.scaleX &&
+            event.y>=top && event.y<top+icon.height*icon.scaleY
+        if(inside!=pointerInside){
+            pointerInside=inside
+            if(inside)requestFocusFromTouch()
+            PhoneMouseCursor.hover(icon,inside)
+        }
+        return super.dispatchHoverEvent(event) || inside
     }
     fun configure(iconWidth: Float, scale: Float) {
         unit=scale
@@ -124,7 +138,10 @@ class AppTile(context: Context, val item: AppEntry?, val label: String, private 
         }
     }
     override fun onInitializeAccessibilityNodeInfo(info:android.view.accessibility.AccessibilityNodeInfo){super.onInitializeAccessibilityNodeInfo(info);info.className="android.widget.Button";info.text=label}
-    override fun onDetachedFromWindow(){spring.stop();icon.setLayerType(LAYER_TYPE_NONE,null);super.onDetachedFromWindow()}
+    override fun onDetachedFromWindow(){
+        pointerInside=false;PhoneMouseCursor.hover(icon,false)
+        spring.stop();icon.setLayerType(LAYER_TYPE_NONE,null);super.onDetachedFromWindow()
+    }
 }
 
 class HomeScreen(context: Context, private val prefs: Preferences, private val wallpaper: WallpaperView,

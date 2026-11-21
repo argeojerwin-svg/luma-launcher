@@ -177,8 +177,10 @@ class LauncherActivity : Activity() {
         closePanel(false);saver.stop(false)
         when(target){
             "all_apps"->{searchDialog?.dismiss();folderNameDialog?.dismiss();home.showLibrary(installed)}
-            "phone_remote"->{PhoneRemoteService.enable(this);main.postDelayed({searchApps()},800)}
-            "app_switcher"->appSwitcher()
+            "launcher_settings"->{searchDialog?.dismiss();folderNameDialog?.dismiss();settings()}
+            "projector_settings"->{searchDialog?.dismiss();folderNameDialog?.dismiss();openProjectorSettings()}
+            "phone_remote"->{PhoneRemoteService.enable(this);main.postDelayed({searchApps(pairing=true)},800)}
+            "app_switcher"->{searchDialog?.dismiss();folderNameDialog?.dismiss();appSwitcher()}
             "search"->searchApps()
             "wallpaper"->wallpaperMenu()
             "screensaver"->saver.start()
@@ -639,22 +641,8 @@ class LauncherActivity : Activity() {
             action("Restore default appearance"){preferences.resetAppearance();loadedWallpaper="\u0000";rebuild();settings(14)},
             action("Weather · ${weather.location}  ›"){weatherSettings()},
             action("Recently Used · ${if(RecentApps.enabled(preferences))"On" else "Off"}  ›"){recentSettings()},
-            action("Continue Watching · ${if(!trakt.connected)"Not connected" else if(trakt.cached.isEmpty())"Unavailable" else "Ready"}  ›"){continueSettings()},
-            action("Phone remote · ${if(PhoneRemoteService.enabled(this))"On" else "Off"}  ›"){phoneRemoteSettings()}
+            action("Continue Watching · ${if(!trakt.connected)"Not connected" else if(trakt.cached.isEmpty())"Unavailable" else "Ready"}  ›"){continueSettings()}
         ),back={controlCentre()},focus=focus)
-    }
-    private fun phoneRemoteSettings(){
-        showPanel("Phone remote",listOf(
-            action("Phone remote · ${if(PhoneRemoteService.enabled(this))"On" else "Off"}"){
-                if(PhoneRemoteService.enabled(this))PhoneRemoteService.disable(this) else PhoneRemoteService.enable(this)
-                phoneRemoteSettings()
-            },
-            action("Show private QR link  ›"){
-                if(!PhoneRemoteService.enabled(this))PhoneRemoteService.enable(this)
-                main.postDelayed({searchApps()},800)
-            },
-            action("Back"){settings(18)}
-        ),"Save the scanned page to your phone's Home Screen. Keep its link private and use the same Wi-Fi.",back={settings(18)})
     }
     private fun continueSettings(){
         val cached=trakt.cached
@@ -848,11 +836,11 @@ class LauncherActivity : Activity() {
             },
             action("Phone remote · ${if(PhoneRemoteService.enabled(this))"On" else "Off"}  ›"){
                 if(PhoneRemoteService.enabled(this)){PhoneRemoteService.disable(this);globalControlSettings()}
-                else {PhoneRemoteService.enable(this);main.postDelayed({searchApps()},800)}
+                else {PhoneRemoteService.enable(this);main.postDelayed({searchApps(pairing=true)},800)}
             },
             action("Show phone remote QR  ›"){
                 if(!PhoneRemoteService.enabled(this))PhoneRemoteService.enable(this)
-                main.postDelayed({searchApps()},800)
+                main.postDelayed({searchApps(pairing=true)},800)
             },
             action("Open Android Accessibility settings  ›"){openSettings(Settings.ACTION_ACCESSIBILITY_SETTINGS)},
             action("Back"){settings(9)}
@@ -884,15 +872,18 @@ class LauncherActivity : Activity() {
         closePanel(false);home.showCollection(installed,"Recently Used",entries.map{it.id})
         if(entries.isEmpty())toast(if(RecentApps.enabled(preferences))"Apps opened from Luma will appear here." else "Turn on Recently Used in Launcher settings.")
     }
-    private fun searchApps(){
-        searchDialog=GlassNameDialog.show(this,wallpaper,preferences,"Search apps","",60){query->
+    private fun searchApps(pairing:Boolean=false){
+        searchDialog?.dismiss();searchDialog=null
+        val dialog=GlassNameDialog.show(this,wallpaper,preferences,"Search apps","",60){query->
             searchDialog=null
             val term=query.trim()
             val matches=installed.filter{AppVisibility.visible(it,preferences) && (apps.displayName(it).contains(term,true) || it.label.contains(term,true))}
             closePanel(false);home.showCollection(installed,if(term.isEmpty())"All Apps" else "Search · $term",matches.map{it.id})
             if(matches.isEmpty())toast("No visible apps match your search.")
         }
-        searchDialog?.setOnDismissListener{searchDialog=null}
+        searchDialog=dialog
+        if(pairing)PhoneRemoteControl.pairing(dialog)
+        dialog.setOnDismissListener{if(searchDialog===dialog)searchDialog=null}
     }
     private fun contextMenu(app:AppEntry){
         val dock=AppVisibility.dock(installed,preferences)
@@ -1160,7 +1151,9 @@ class LauncherActivity : Activity() {
     private fun pick(target: String,type: String) {
         pickTarget=target;pickProfile=preferences.profile
         if(type.startsWith("image/")){
-            startActivityForResult(Intent(this,ImagePickerActivity::class.java).putExtra("allow_video",target=="wallpaper"),42);return
+            startActivityForResult(Intent(this,ImagePickerActivity::class.java)
+                .putExtra("allow_video",target=="wallpaper")
+                .putExtra(ImagePickerActivity.EXTRA_WALLPAPER_ONLY,target=="wallpaper"),42);return
         }
         val intent=Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType(type)
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)

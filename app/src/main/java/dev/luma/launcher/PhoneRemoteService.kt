@@ -39,8 +39,12 @@ class PhoneRemoteService:Service(){
                         val page=assets.open("phone-keyboard.html").bufferedReader().use{it.readText()}
                         val next=PhoneTextSession(ip,page,"Phone remote",2048,"",{},
                             lifetimeMillis=java.util.concurrent.TimeUnit.DAYS.toMillis(3650),onRemote=control,
-                            port=19767,pairingToken=token(this@PhoneRemoteService),textTarget={PhoneRemoteControl.textTarget()})
-                        if(stopped)next.close() else {server=next;currentUrl=next.url;address=ip.hostAddress.orEmpty()}
+                            port=19767,pairingToken=token(this@PhoneRemoteService),textTarget={PhoneRemoteControl.textTarget()},
+                            icon=assets.open("luma-remote-icon.png").use{it.readBytes()},onInputReady={FastPhoneInput.ready()},onMagneticTarget={PhoneMouseCursor.magneticTarget()},onApps={PhoneRemoteControl.apps(this@PhoneRemoteService)},onLaunch={PhoneRemoteControl.launch(this@PhoneRemoteService,it)},onConnected={PhoneRemoteControl.connected()},onPointer={UniversalPointer.settings(this@PhoneRemoteService,it)})
+                        if(stopped)next.close() else {
+                            server=next;currentUrl=next.url;address=ip.hostAddress.orEmpty()
+                            runCatching{PhoneRemoteControl.apps(this@PhoneRemoteService)}
+                        }
                     }
                 }.onFailure{android.util.Log.w("LumaPhoneRemote","Remote listener retry",it)}
                 main.post{if(!stopped)main.postDelayed(this,10000)}
@@ -62,7 +66,7 @@ class PhoneRemoteService:Service(){
         main.removeCallbacks(check);main.post(check);return START_STICKY
     }
     override fun onBind(intent:Intent?):IBinder?=null
-    override fun onDestroy(){stopped=true;main.removeCallbacksAndMessages(null);server?.close();server=null;currentUrl=null;FastPhoneInput.close();worker.shutdownNow();super.onDestroy()}
+    override fun onDestroy(){stopped=true;main.removeCallbacksAndMessages(null);server?.close();server=null;currentUrl=null;UniversalPointer.close();FastPhoneInput.close();worker.shutdownNow();super.onDestroy()}
     companion object {
         @Volatile private var currentUrl:String?=null
         private fun prefs(context:Context)=context.getSharedPreferences("phone-remote-private",Context.MODE_PRIVATE)

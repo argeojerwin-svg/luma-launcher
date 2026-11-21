@@ -26,3 +26,9 @@ Source entry points: `PhoneRemoteService.kt` (persistent local page), `PhoneText
 - The pointer needs Android's overlay permission. D-pad and text entry can still work without it when supported.
 - A QR link stops working if the TV changes IP or Phone remote is turned off. Scan again after reconnecting the TV.
 - To remove Luma, follow the [installation and recovery guide](INSTALL.md). This feature does not change the Android default Home app or remove the original launcher.
+
+## v1.0.16 controls
+
+Touchpad opens by default. One finger points and taps; two fingers scroll. Existing scroll buttons remain. Hold arrows and volume to repeat; release, leave the page or lose connection to stop. Status distinguishes TV controls ready, controls reconnecting and offline. Scrolling clears native tile hover, Luma highlights and magnetic targeting; movement restores hover.
+
+Cross-app pointer highlights are optional, off by default and device-dependent. The on-device debugging helper has broad screen-structure access; Luma uses only control bounds and does not save screen text or screenshots. Unsupported controls retain the circle. Keep the phone link private on a trusted local network.
