@@ -313,7 +313,11 @@
       if (!appsLoadedAt && state.remote) setTimeout(() => loadApps().catch(() => {}), 500);
       if (state.permanent) document.querySelector('#help').textContent = 'Save this page to your phone’s Home Screen. It reconnects automatically on the same Wi-Fi while the projector is on. Open a text field on the projector to type. Keep this private link to yourself.';
       if (state.textEnabled) message('Connected. Start typing.');
-    } catch (error) { send.disabled = false; send.textContent = 'Retry connection'; message(error.message || 'Could not connect. Check that your phone and projector use the same Wi-Fi.', true); }
+    } catch (error) {
+      connected = false; remoteAvailable = false; remoteReady = false; stopInteractions(); setHealth('offline');
+      send.disabled = false; send.textContent = 'Retry connection';
+      message(error.message || 'Could not connect. Check that your phone and projector use the same Wi-Fi.', true);
+    }
   }
   input.addEventListener('input', () => {
     if (submitting || done) return;

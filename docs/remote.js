@@ -176,7 +176,13 @@
       if (!appsLoadedAt && state.remote) setTimeout(() => loadApps().catch(() => {}), 500);
       if (state.permanent) document.querySelector('#help').textContent = 'Save this page to your phone’s Home Screen. It reconnects automatically on the same Wi-Fi while the projector is on. Open a text field on the projector to type. Keep this private link to yourself.';
       if (state.textEnabled) message('Connected. Start typing.');
-    } catch (error) { send.disabled = false; send.textContent = 'Retry connection'; message(error.message || 'Could not connect. Check that your phone and projector use the same Wi-Fi.', true); }
+    } catch (error) {
+      connected = false; remoteAvailable = false; remoteReady = false; stopInteractions(); setHealth('offline');
+      document.querySelector('.help-panel').open = true;
+      document.querySelector('#pairStatus').textContent = error.status === 403 || error.status === 410 ? 'The saved link was rejected. Paste the current private QR link from your projector.' : 'Cannot reach ' + projectorOrigin + '. Check projector power, its current IP and the same Wi-Fi. Chrome must allow local-network access. Tap Retry to use your saved link again.';
+      send.disabled = false; send.textContent = 'Retry connection';
+      message(error.message || 'Could not connect. Check that your phone and projector use the same Wi-Fi.', true);
+    }
   }
   input.addEventListener('input', () => {
     if (submitting || done) return;
@@ -399,6 +405,10 @@
   }, 2500);
   if (token) connect();
 
+  document.querySelector('#reconnect').addEventListener('click', () => {
+    if (!token) { document.querySelector('#pairStatus').textContent = 'Paste the complete private projector link and tap Connect first.'; return; }
+    stopped = false; connected = false; connect();
+  });
   document.querySelector('#pair').addEventListener('click', () => {
     const value = document.querySelector('#pairLink').value.trim();
     if (!loadPairing(value)) { document.querySelector('#pairStatus').textContent = 'Use the complete local QR link: http://projector-ip:19767/#private-token'; return; }
@@ -423,4 +433,8 @@
     if (!installPrompt) return; await installPrompt.prompt(); installPrompt = null; document.querySelector('#install').hidden = true;
   });
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
-  if (!token) document.querySelector('.help-panel').open = true;
+  if (!token) {
+    document.querySelector('.help-panel').open = true;
+    remoteStatus.textContent = 'Paste your projector link in Connection & help to connect.';
+    remoteButtons.forEach(button => button.disabled = true);
+  }
