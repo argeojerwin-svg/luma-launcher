@@ -62,23 +62,30 @@ class PhoneTextSessionTest {
     @Test fun temporaryEditorsDoNotAllowHostedRemoteOrigin(){
         session().use{s->assertTrue(request(s,origin=PhoneTextSession.WEB_REMOTE_ORIGIN).startsWith("HTTP/1.1 403"))}
     }
-    @Test fun persistentRemoteRequestsStayOrderedAndAuthenticated(){
+    @Test fun hostedAppPickerPointerAndScrollRoutesStayAuthenticated(){
+        var launched="";var pointer=false
+        val commands=java.util.concurrent.CopyOnWriteArrayList<String>()
+        PhoneTextSession(localhost,"page","remote",40,"",{},onRemote={commands.add(it);true},textTarget={null},
+            onApps={"[{\"id\":\"test.app\",\"name\":\"Test\"}]"},onLaunch={launched=it;true},
+            onPointer={value->if(value!=null)pointer=value;"{\"enabled\":$pointer}"},onInputReady={false}).use{s->
+            val origin=PhoneTextSession.WEB_REMOTE_ORIGIN
+            assertTrue(request(s,"/apps",origin=origin,token="wrong").startsWith("HTTP/1.1 403"))
+            assertTrue(request(s,"/apps",origin=origin).contains("test.app"))
+            assertTrue(request(s,"/launch","POST","test.app".toByteArray(),origin=origin).startsWith("HTTP/1.1 200"));assertEquals("test.app",launched)
+            assertTrue(request(s,"/pointer","POST","on".toByteArray(),origin=origin).contains("\"enabled\":true"));assertTrue(pointer)
+            assertTrue(request(s,"/pointer","POST","invalid".toByteArray(),origin=origin).startsWith("HTTP/1.1 400"))
+            assertTrue(request(s,origin=origin).contains("\"inputReady\":false"))
+            assertTrue(request(s,"/remote","POST","scroll:2".toByteArray(),origin=origin).startsWith("HTTP/1.1 200"))
+            assertTrue(request(s,"/remote","POST","scroll:7".toByteArray(),origin=origin).startsWith("HTTP/1.1 400"));assertEquals(listOf("scroll:2"),commands)
+        }
+    }
+    @Test fun sequentialRemoteRequestsStayOrderedAndAuthenticated(){
         val commands=java.util.concurrent.CopyOnWriteArrayList<String>()
         PhoneTextSession(localhost,"page","remote",40,"",{},onRemote={commands.add(it);true}).use{s->
-            val uri=URI(s.url)
-            Socket(uri.host,uri.port).use{socket->
-                socket.soTimeout=2000;socket.tcpNoDelay=true
-                fun remote(command:String,token:String):String{
-                    val body=command.toByteArray(Charsets.UTF_8)
-                    val header="POST /remote HTTP/1.1\r\nHost: ${uri.host}:${uri.port}\r\nX-Luma-Token: $token\r\nContent-Length: ${body.size}\r\n\r\n"
-                    socket.getOutputStream().apply{write(header.toByteArray()+body);flush()}
-                    return readResponse(socket)
-                }
-                assertTrue(remote("right",uri.fragment).endsWith("\r\n\r\nOK"))
-                assertTrue(remote("left","wrong").startsWith("HTTP/1.1 403"))
-                assertTrue(remote("left",uri.fragment).endsWith("\r\n\r\nOK"))
-                assertEquals(listOf("right","left"),commands)
-            }
+            assertTrue(request(s,"/remote","POST","right".toByteArray()).endsWith("\r\n\r\nOK"))
+            assertTrue(request(s,"/remote","POST","left".toByteArray(),token="wrong").startsWith("HTTP/1.1 403"))
+            assertTrue(request(s,"/remote","POST","left".toByteArray()).endsWith("\r\n\r\nOK"))
+            assertEquals(listOf("right","left"),commands)
         }
     }
     @Test fun validPhoneInputAndStateUseUtf8(){

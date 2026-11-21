@@ -2,13 +2,13 @@
 
 **A cinematic, tvOS-inspired home screen for Android TV.** Luma brings a Liquid Glass-inspired UI to your TV: a refined app dock, translucent Control Centre, fluid remote focus, App Switcher, live weather, and Continue Watching when real viewing data is available.
 
-[**Download Luma v1.0.13 APK**](https://github.com/smzaki101-lab/luma-launcher/releases/download/v1.0.13/Luma-v1.0.13.apk) · [Release notes](https://github.com/smzaki101-lab/luma-launcher/releases/tag/v1.0.13) · [Installation and recovery](docs/INSTALL.md)
+[**Download Luma v1.0.16 APK**](https://github.com/smzaki101-lab/luma-launcher/releases/download/v1.0.16/Luma-v1.0.16.apk) · [Release notes](https://github.com/smzaki101-lab/luma-launcher/releases/tag/v1.0.16) · [Installation and recovery](docs/INSTALL.md)
 
 The signed APK includes the remote-friendly keyboard, app search shortcuts, Continue Watching and the latest Now Playing controls. Download it under **Assets** on the release page. Global Menu shortcuts depend on the TV's input and accessibility support; normal launcher operation does not require a companion computer.
 
 ![Luma home screen showing the cinematic wallpaper, weather and time widgets, and app dock](screenshots/home.png)
 
-**v1.0.13:** lets you select the album artwork in Control Centre to open Spotify and fixes overlap when the Next control is focused. The v1.0.12 Spotify Continue Listening, local playback history and Continue Watching improvements remain available. See [playback details](docs/LOCAL-PLAYBACK-HISTORY.md).
+**v1.0.16:** lets you select the album artwork in Control Centre to open Spotify and fixes overlap when the Next control is focused. The v1.0.12 Spotify Continue Listening, local playback history and Continue Watching improvements remain available. See [playback details](docs/LOCAL-PLAYBACK-HISTORY.md).
 
 ## Explore Luma
 
@@ -36,11 +36,10 @@ Screenshots show one tested setup. Installed apps, content, wallpaper, weather a
 - **Real Continue Watching:** Android TV Watch Next and supported Stremio entries, with provider links where available. Luma never invents playback history or progress.
 - **Easy recovery:** Luma does not remove your existing launcher. Android's Home App chooser and [ADB uninstall steps](docs/INSTALL.md) remain available.
 
-The phone remote is currently available in the source tree. The v1.0.13 release APK linked above predates this addition; build from the latest source or wait for a signed release containing it.
 
 ## Install
 
-Download the [signed Luma v1.0.13 APK](https://github.com/smzaki101-lab/luma-launcher/releases/download/v1.0.13/Luma-v1.0.13.apk) and follow the [installation and recovery guide](docs/INSTALL.md). Open Luma from your existing app list before choosing any default Home app.
+Download the [signed Luma v1.0.16 APK](https://github.com/smzaki101-lab/luma-launcher/releases/download/v1.0.16/Luma-v1.0.16.apk) and follow the [installation and recovery guide](docs/INSTALL.md). Open Luma from your existing app list before choosing any default Home app.
 
 The application ID is `dev.luma.launcher`. Device compatibility beyond tested hardware is still being established; see [known limitations](docs/KNOWN-LIMITATIONS.md). Global Menu handling varies by TV firmware and remote; see the [shortcut guide](docs/GLOBAL-MENU.md).
 

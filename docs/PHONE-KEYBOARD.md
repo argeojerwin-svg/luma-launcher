@@ -42,7 +42,7 @@ This is a menu shortcut for search, not an automatic replacement of the apps' bu
 
 Each visible editor has a fresh random connection token and local port. Codes expire after 10 minutes. New QR code replaces the link. Hiding the keyboard, changing fields or apps, closing a Luma editor, or stopping its activity closes the old session.
 
-Phone typing is unavailable for password fields, text over 2048 characters, and editors that do not expose a complete text snapshot through Android. Phone input replaces the current field text. The separate, optional [phone remote](PHONE-REMOTE.md) provides a reusable private link for navigation and connects to an active text field when one is available.
+Phone typing is unavailable for password fields, text over 2048 characters, and editors that do not expose a complete text snapshot through Android. Remote input remains available. Phone input replaces the current field text; it is not a phone-wide remote control.
 
 Phone typing uses temporary local HTTP and no cloud service. Guest Wi-Fi isolation or VPN routing can block it. Use a trusted local network. No text, pairing token or typing history is logged or saved by the keyboard. See [privacy](PRIVACY.md).
 
@@ -63,3 +63,17 @@ Select the original System Keyboard or Android Keyboard in Android keyboard sett
 Verification: 33 JVM tests and 5 targeted projector tests passed. The integration test exercises Android input, D-pad navigation, QR text delivery, phone Go invoking Search, previous-session closure and password classification. End-to-end testing in Stremio confirmed the bottom overlay, QR scan and phone Go returning search results. Release build and lint passed with 0 errors and 52 existing warnings.
 
 Android instrumentation force-stops its target app at completion. Launch Luma once after running device tests before checking the IME from another app; ordinary launcher usage does not involve this test-runner stop.
+
+## Optional cross-app pointer highlights (P6 test build)
+
+The private phone remote offers **Connection & help → Cross-app pointer highlights**. It is off by default; the owner can turn it on for supported controls in other apps. This uses a separate on-device Android UI automation helper through the already configured local debugging connection. It inspects control bounds, never reads node text in Luma's code, and does not save screenshots or screen text. Android still grants the helper broad screen-structure access. Existing accessibility services are not suppressed.
+
+Bounds are cached and scanned on a separate worker; pointer movement and clicks never wait for a scan. Over an exposed control, a light rounded highlight replaces the circle. Apps that do not expose usable bounds keep the circular pointer. This does not resize another app's real views or guarantee every control is detectable. Turning the option off closes the helper. It also disconnects after pointer activity stops and starts again when needed.
+
+Targeted P6 checks: highlights appeared over Stremio posters and YouTube content cards. Matched on/off request timing remained approximately 25–32 ms median; these are command-response measurements, not end-to-end display latency. The feature remains an optional device-dependent enhancement.
+
+## Phone gestures and connection health
+
+Touchpad opens by default. Use one finger to point and tap, or two fingers to scroll; lifting one finger after scrolling cannot accidentally click. Existing scroll buttons remain available. Hold an arrow or volume button to repeat after a short initial pause. Release, change modes, leave the page or lose connection to stop repeating. Commands wait for acknowledgement instead of building an unchecked repeat queue.
+
+The connection label distinguishes **TV controls ready**, **TV controls reconnecting** (page reachable but its input helper is unavailable), and **Offline · reconnecting**. It checks recent input-helper acknowledgements without adding another network request per gesture. Android restarts the existing optional input helper when needed.

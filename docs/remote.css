@@ -14,7 +14,7 @@
     #status { min-height: 24px; margin: 16px 0 0; font-size: 14px; color: #a8d9c3; }
     #status.error { color: #f1bf98; }
     .remote { margin-top: 24px; padding: 20px; border: 1px solid #ffffff20; border-radius: 24px; background: #ffffff09; }
-    .remote-heading { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; }
+    .remote-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; }
     .remote h2 { margin:0; }
     .pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-width: 300px; margin: auto; }
     .remote button { margin-top: 0; min-height: 52px; touch-action: manipulation; }
@@ -23,7 +23,6 @@
     .utility-head button, .volume button { width:44px; min-height:44px; padding:7px; background:#ffffff16; color:#edf5ff; border:1px solid #ffffff24; box-shadow:inset 0 1px 0 #ffffff22; }
     .utility-head button:active, .volume button:active { background:#ffffff30; transform:scale(.97); }
     .utility-head .power { color:#ffd4d4; font-size:22px; }
-    #controlCentre { touch-action:none; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
     .utility-head svg, .volume svg { width:22px; height:22px; vertical-align:middle; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
     .volume { display:flex; justify-content:center; gap:8px; margin:20px auto 22px; }
     .volume button { width:68px; font-size:23px; line-height:1; }
@@ -31,5 +30,67 @@
     #disconnect { margin-top:18px; }
     #remoteStatus { font-size:14px; color:#aebed4; }
     footer { font-size: 13px; margin-top: 24px; }
+    [hidden] { display:none !important; }
+    body { padding:max(16px,env(safe-area-inset-top)) 18px max(16px,env(safe-area-inset-bottom)); background:radial-gradient(ellipse at 80% 0%,#243450 0%,transparent 65%),#0b111d; -webkit-tap-highlight-color:transparent; }
+    main { max-width:440px; margin:0 auto; }
+    .remote { margin:0; padding:8px 0 0; border:0; background:none; }
+    .remote h2 { display:flex; align-items:center; gap:10px; font-size:23px; letter-spacing:-.6px; font-weight:600; }
+    .utility-head { gap:6px; }
+    .utility-head button { width:40px; min-height:44px; border:0; background:#ffffff0c; }
+    #remoteStatus { margin:12px 0 20px; font-size:12px; letter-spacing:.2px; }
+    button { cursor:pointer; transition:background .12s,transform .12s; }
+    .remote button { background:#ffffff0d; color:#eaf1ff; border:1px solid #ffffff12; box-shadow:inset 0 1px #ffffff0a; }
+    .remote button:active { background:#ffffff25; transform:scale(.96); }
+    .mode-bar { display:flex; align-items:center; padding:4px; gap:4px; background:#0003; border:1px solid #ffffff0c; border-radius:18px; margin-bottom:24px; }
+    .mode-bar button { flex:1; min-height:42px; padding:8px; border:0; box-shadow:none; font-size:14px; color:#9baac0; background:transparent; }
+    .mode-bar button[aria-pressed="true"] { background:#ffffff16; color:white; }
+    .mode-bar #openTyping { flex:0 0 48px; border-left:1px solid #ffffff12; border-radius:0 12px 12px 0; }
+    .mode-bar svg { width:23px; height:23px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; vertical-align:middle; }
+    .control-area { width:min(100%,300px); aspect-ratio:1; margin:0 auto; }
+    .pad { width:100%; height:100%; max-width:none; margin:0; grid-template-columns:repeat(3,minmax(0,1fr)); grid-template-rows:repeat(3,minmax(0,1fr)); gap:10px; padding:0; border:0; background:none; }
+    .remote .pad button { min-height:0; width:100%; padding:0; border:1px solid #ffffff18; background:#ffffff0d; color:#eaf1ff; border-radius:20px; font-size:16px; box-shadow:inset 0 1px #ffffff0a; }
+    .remote .pad button:active { background:#ffffff25; }
+    .pad svg { width:24px; height:24px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; vertical-align:middle; }
+    .volume { margin:24px auto; }
+    .volume button { width:72px; min-height:46px; background:#ffffff0c; border-radius:16px; }
+    .remote>.row { margin-top:24px; }
+    .remote>.row button { flex:1; min-width:0; font-size:14px; min-height:48px; border-radius:16px; }
+    #touchpad { width:100%; height:100%; margin:0; padding:20px; border-radius:24px; border-color:#ffffff18; background:#ffffff08; font-size:12px; text-align:center; }
+    #scrollControls { width:min(100%,300px); margin:16px auto 0; }
+    #scrollControls button { flex:1; min-width:0; }
+    .help-panel { margin:22px 0 8px; color:#8998ae; font-size:12px; text-align:center; }
+    .help-panel summary { padding:10px; cursor:pointer; }
+    .help-panel p { line-height:1.7; }
+    #disconnect { width:auto; margin:6px; padding:10px 16px; background:#ffffff0c; color:#bdc9da; font-size:12px; }
+    dialog { width:calc(100% - 24px); max-width:440px; margin:auto auto 12px; padding:22px; border-radius:28px; border:1px solid #ffffff25; background:#172335; color:#f4f8ff; box-shadow:0 24px 80px #0008; }
+    dialog::backdrop { background:#0008; animation:backdrop-in 180ms ease-out; }
+    dialog[data-closing]::backdrop { animation:backdrop-out 150ms ease-in forwards; }
+    @keyframes backdrop-in { from { background:#0000; } to { background:#0008; } }
+    @keyframes backdrop-out { from { background:#0008; } to { background:#0000; } }
+    .mode-bar button { transition:background 160ms ease,color 160ms ease,transform 100ms ease; }
+    #openTyping:active, #closeTyping:active, #closeApps:active, .app-launch:active { transform:scale(.96); }
+    @media (prefers-reduced-motion:reduce) { dialog::backdrop { animation:none; } }
+    .sheet-heading { display:flex; align-items:center; justify-content:space-between; }
+    .sheet-heading h2 { font-size:21px; margin:0; }
+    #closeTyping { width:44px; height:44px; padding:0; margin:0; color:#d4dfef; background:#ffffff10; font-size:26px; border-radius:50%; }
+    form { margin:20px 0 0; padding:0; border:0; background:none; box-shadow:none; }
+    @media (max-width:350px) { body { padding-left:12px; padding-right:12px; } .utility-head button { width:36px; } }
+    @media (prefers-reduced-motion:reduce) { button { transition:none; } }
+    #appsSheet { max-height:80svh; }
+    #appSearch { margin:18px 0 12px; padding:12px; font-size:16px; }
+    #appList { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    .app-launch { margin:0; padding:16px 10px; min-height:88px; background:#ffffff0b; border:1px solid #ffffff16; color:#edf3ff; font-size:14px; overflow-wrap:anywhere; }
+    .app-launch:active { background:#ffffff20; }
+    .app-initial { display:block; width:32px; height:32px; line-height:32px; margin:0 auto 9px; border-radius:9px; background:#a5c6ed20; color:#cce1fc; font-size:18px; }
+    .app-icon { display:block; width:48px; height:48px; object-fit:contain; margin:0 auto 10px; border-radius:10px; }
+    #closeApps { width:44px; height:44px; margin:0; padding:0; background:#ffffff10; color:#d4dfef; border-radius:50%; font-size:26px; }
+    #appsStatus { color:#aebed4; font-size:13px; }
+    .pointer-option { display:flex; align-items:center; justify-content:center; gap:10px; font-size:13px; margin:16px 0 8px; }
+    #crossAppPointer { width:20px; height:20px; padding:0; box-shadow:none; }
+    .pointer-note { font-size:12px; }
+    #remoteStatus[data-health="ready"] { color:#a8d9c3; }
+    #remoteStatus[data-health="waiting"] { color:#e4c78e; }
+    #remoteStatus[data-health="offline"] { color:#edaca7; }
+    [data-command] { -webkit-user-select:none; user-select:none; }
 
 #pairStatus {font-size:13px;color:#aebed4;} [hidden] {display:none!important;}

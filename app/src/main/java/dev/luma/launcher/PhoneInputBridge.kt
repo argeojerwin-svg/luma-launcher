@@ -22,6 +22,7 @@ object PhoneInputBridge {
         val inject=type.getMethod("injectInputEvent",InputEvent::class.java,Int::class.javaPrimitiveType)
         fun send(event:InputEvent){check(inject.invoke(manager,event,0)==true)}
         var x=width/2f;var y=height/2f
+        var hovering=false
         fun mouse(action:Int,buttons:Int=0,scroll:Float=0f,started:Long=SystemClock.uptimeMillis(),button:Int=0){
             val now=SystemClock.uptimeMillis()
             val properties=MotionEvent.PointerProperties().apply{id=0;toolType=MotionEvent.TOOL_TYPE_MOUSE}
@@ -29,6 +30,11 @@ object PhoneInputBridge {
             val event=MotionEvent.obtain(started,now,action,1,arrayOf(properties),arrayOf(coords),0,buttons,1f,1f,0,0,InputDevice.SOURCE_MOUSE,0)
             if(button!=0)MotionEvent::class.java.getMethod("setActionButton",Int::class.javaPrimitiveType).invoke(event,button)
             try{send(event)}finally{event.recycle()}
+        }
+        fun scroll(amount:Float){
+            // End the app's native tile hover before its contents move underneath us.
+            if(hovering){mouse(MotionEvent.ACTION_HOVER_EXIT);hovering=false}
+            mouse(MotionEvent.ACTION_SCROLL,scroll=amount)
         }
         fun command(value:String):Boolean{
             if(value=="ping")return true
@@ -39,11 +45,16 @@ object PhoneInputBridge {
                 send(KeyEvent(now,now,KeyEvent.ACTION_UP,key,0,0,android.view.KeyCharacterMap.VIRTUAL_KEYBOARD,0,0,InputDevice.SOURCE_KEYBOARD))
                 return true
             }
-            if(value=="scrollUp" || value=="scrollDown"){mouse(MotionEvent.ACTION_SCROLL,scroll=if(value=="scrollUp")3f else -3f);return true}
+            if(value=="scrollUp" || value=="scrollDown"){scroll(if(value=="scrollUp")3f else -3f);return true}
+            if(value.startsWith("scroll:")){
+                val amount=value.substringAfter(':').toIntOrNull()?.takeIf{it in -6..6 && it!=0}?:return false
+                scroll(amount.toFloat());return true
+            }
             if(!Regex("(move|tap):[0-9]{1,4},[0-9]{1,4}").matches(value))return false
             val point=value.substringAfter(':').split(',').map{it.toInt()}
             if(point.any{it !in 0..1000})return false
             x=point[0]*(width-1)/1000f;y=point[1]*(height-1)/1000f
+            if(!hovering){mouse(MotionEvent.ACTION_HOVER_ENTER);hovering=true}
             mouse(MotionEvent.ACTION_HOVER_MOVE)
             if(value.startsWith("tap:")){
                 // TV browsers often ignore mouse button events inside their WebView.

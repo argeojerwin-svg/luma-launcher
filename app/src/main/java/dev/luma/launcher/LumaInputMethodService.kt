@@ -49,6 +49,16 @@ class LumaInputMethodService:InputMethodService(){
     private val worker=Executors.newSingleThreadExecutor()
     private var generation=0
     private var editing=false
+    private var phoneTyping=false
+    private fun phoneTyping(active:Boolean){
+        if(active && (!editing || secret))return
+        phoneTyping=active
+        if(::root.isInitialized){
+            root.visibility=if(active)View.INVISIBLE else View.VISIBLE
+            root.importantForAccessibility=if(active)View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS else View.IMPORTANT_FOR_ACCESSIBILITY_AUTO
+            root.requestLayout()
+        }
+    }
     private var session:PhoneTextSession?=null
     private lateinit var root:FrameLayout
     private lateinit var card:LinearLayout
@@ -164,6 +174,7 @@ class LumaInputMethodService:InputMethodService(){
         val height=window?.window?.decorView?.height?:resources.displayMetrics.heightPixels
         outInsets.contentTopInsets=height;outInsets.visibleTopInsets=height
         outInsets.touchableInsets=Insets.TOUCHABLE_INSETS_REGION
+        if(phoneTyping){outInsets.touchableRegion.setEmpty();return}
         val location=IntArray(2);card.getLocationInWindow(location)
         outInsets.touchableRegion.set(Rect(location[0],location[1],location[0]+card.width,location[1]+card.height))
     }
@@ -183,6 +194,7 @@ class LumaInputMethodService:InputMethodService(){
     }
     override fun onStartInputView(info:EditorInfo?,restarting:Boolean){
         super.onStartInputView(info,restarting);editing=true
+        phoneTyping(false)
         updateWifiControls()
         wifiPaste.nextFocusRightId=go.id;wifiPaste.nextFocusUpId=keyboard.firstKey.id
         go.nextFocusLeftId=if(wifiField)wifiPaste.id else View.NO_ID
@@ -281,10 +293,10 @@ class LumaInputMethodService:InputMethodService(){
                     ?.firstOrNull{!it.isLoopbackAddress && !it.isLinkLocalAddress}?:error("Connect to Wi-Fi for phone typing")
                 val page=assets.open("phone-keyboard.html").bufferedReader().use{it.readText()}
                 val next=PhoneTextSession(address,page,"Type in the current app",2048,initial,onText={value->main.post{
-                    if(editing && generation==request){if(replaceFromPhone(value))status.setText(R.string.phone_keyboard_connected) else {stopPhone();status.setText(R.string.keyboard_field_changed)}}
-                }},onExpired={main.post{if(generation==request){stopPhone();status.setText(R.string.keyboard_expired)}}},onSubmit={value->main.post{
+                    if(editing && generation==request){phoneTyping(true);if(replaceFromPhone(value))status.setText(R.string.phone_keyboard_connected) else {phoneTyping(false);stopPhone();status.setText(R.string.keyboard_field_changed)}}
+                }},onExpired={main.post{if(generation==request){phoneTyping(false);stopPhone();status.setText(R.string.keyboard_expired)}}},onSubmit={value->main.post{
                     if(editing && generation==request && replaceFromPhone(value))confirm()
-                }},onRemote=PhoneRemoteControl.callback(this))
+                }},onRemote=PhoneRemoteControl.callback(this),icon=assets.open("luma-remote-icon.png").use{it.readBytes()},onInputReady={FastPhoneInput.ready()},onMagneticTarget={PhoneMouseCursor.magneticTarget()},onApps={PhoneRemoteControl.apps(this)},onLaunch={PhoneRemoteControl.launch(this,it)},onConnected={main.post{if(editing && generation==request)phoneTyping(true)}})
                 PhoneRemoteControl.register(next)
                 created=next
                 val phoneUrl=PhoneRemoteService.url(this)?:next.url
@@ -301,6 +313,10 @@ class LumaInputMethodService:InputMethodService(){
     }
     private fun handleRemote(keyCode:Int,event:KeyEvent):Boolean{
         if(!editing || !isInputViewShown || !::root.isInitialized)return false
+        if(phoneTyping){
+            if(event.deviceId>=0 && keyCode in listOf(KeyEvent.KEYCODE_DPAD_LEFT,KeyEvent.KEYCODE_DPAD_RIGHT,KeyEvent.KEYCODE_DPAD_UP,KeyEvent.KEYCODE_DPAD_DOWN,KeyEvent.KEYCODE_DPAD_CENTER))phoneTyping(false)
+            else return false
+        }
         val direction=when(keyCode){KeyEvent.KEYCODE_DPAD_LEFT->View.FOCUS_LEFT;KeyEvent.KEYCODE_DPAD_RIGHT->View.FOCUS_RIGHT;KeyEvent.KEYCODE_DPAD_UP->View.FOCUS_UP;KeyEvent.KEYCODE_DPAD_DOWN->View.FOCUS_DOWN;else->0}
         val select=keyCode in listOf(KeyEvent.KEYCODE_DPAD_CENTER,KeyEvent.KEYCODE_ENTER,KeyEvent.KEYCODE_NUMPAD_ENTER)
         if(direction==0 && !select)return false

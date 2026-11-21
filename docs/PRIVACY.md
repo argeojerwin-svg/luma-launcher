@@ -16,3 +16,9 @@ The optional global Menu bridge used during P6 testing is separate from normal L
 
 
 The bundled **Luma Keyboard** is optional and must be enabled/selected through Android. It edits only the current app field using Android InputConnection. Typed text is sent to that app; the app may store or send it according to its own behavior. Luma records no typing history and sends no keyboard data to cloud services. Phone QR typing is disabled for password input types and fields without a complete bounded text snapshot. You can switch to another installed keyboard through Android settings.
+
+## Optional phone remote and pointer
+
+The reusable local phone remote stores a random private control token on the TV. It serves only on the TV's local network and checks the token, request origin and host. Keep its link private on a trusted Wi-Fi network; traffic uses local HTTP. The phone app picker reads installed launchable app names and icons for display on the paired phone. Typing is delivered to the active supported Luma Keyboard field and is not logged. Password fields are excluded.
+
+Cross-app pointer highlights are a separate opt-in feature. Android gives the local UI automation helper broad screen-structure access. Luma inspects control geometry without reading node text and does not save screen text or screenshots. Turning the option off closes the helper. Firmware support varies; no cloud service receives this geometry.

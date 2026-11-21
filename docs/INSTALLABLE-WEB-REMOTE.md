@@ -31,3 +31,19 @@ or app installation; physical-phone confirmation is still required.
 Hosting: Pages source is branch `feature/installable-web-remote`, folder `/docs`.
 The web app manifest uses standalone mode, stable app ID/start URL and 192/512px
 icons. Updating the hosted files updates the interface without an APK install.
+
+## v1.0.16 integration
+
+The hosted interface now follows upstream v1.0.16: Touchpad/Buttons modes,
+two-finger scrolling, held arrow and volume repeats, connection-health feedback,
+app picker with icons, magnetic pointer targets and optional cross-app highlights.
+Connection & help contains the saved-link pairing controls. Existing saved links
+remain valid. The native phone companion also loads the refreshed local interface.
+The HTTPS origin allowlist covers the new apps, launch and pointer endpoints;
+every actual request still requires the private token.
+
+The local projector build passed all 74 unit tests, release lint and signing.
+Runtime checks covered app list/icons, app launching, readiness, pointer state,
+magnetic-target response, bounded scroll commands and unauthorized requests.
+JavaScript startup and Control Centre tap/hold/cancel checks passed. Real phone
+multi-touch gesture feel and optional cross-app highlights need user confirmation.

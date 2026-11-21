@@ -22,6 +22,7 @@ class GlobalControlActivity : Activity() {
     private var keyboardDialog:Dialog?=null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if(intent.getBooleanExtra("phone_app_switcher",false)){phoneAppSwitcher();return}
         // Let the sheet animate over the existing app; avoid a second task/window fade.
         overridePendingTransition(0,0)
         window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
@@ -85,7 +86,18 @@ class GlobalControlActivity : Activity() {
         sheet.enter(prefs.motion != 0)
         root.post { sheet.focusAt(0) }
     }
-    override fun onNewIntent(intent: Intent) { super.onNewIntent(intent); dismiss() }
+    private fun phoneAppSwitcher(){
+        finish()
+        startActivity(Intent(this,LauncherActivity::class.java).apply{
+            action=LauncherActivity.ACTION_GLOBAL_CONTROL
+            putExtra(LauncherActivity.EXTRA_GLOBAL_TARGET,"app_switcher")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        })
+    }
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        if(intent.getBooleanExtra("phone_app_switcher",false))phoneAppSwitcher() else dismiss()
+    }
     override fun onResume(){super.onResume();stopNetworkObserve=NetworkState.observe(this){panel?.setNetworkStatus(it.detail)}}
     override fun onPause(){stopNetworkObserve?.invoke();stopNetworkObserve=null;super.onPause()}
     override fun onDestroy(){keyboardDialog?.dismiss();keyboardDialog=null;super.onDestroy()}

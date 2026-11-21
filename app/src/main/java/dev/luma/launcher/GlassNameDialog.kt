@@ -74,7 +74,25 @@ object GlassNameDialog {
         field.nextFocusRightId=refresh.id;refresh.nextFocusUpId=field.id;refresh.nextFocusDownId=save.id
         save.nextFocusRightId=cancel.id;cancel.nextFocusLeftId=save.id
 
+        var phoneHidden=false
+        fun phoneTyping(active:Boolean){
+            if(disposed || !dialog.isShowing || active==phoneHidden)return
+            phoneHidden=active
+            card.visibility=if(active)View.INVISIBLE else View.VISIBLE
+            dialog.window?.apply{
+                if(active){
+                    clearFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+                    addFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+                    setLayout(1,1)
+                }else{
+                    clearFlags(WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+                    addFlags(WindowManager.LayoutParams.FLAG_DIM_BEHIND)
+                    setLayout((activity.resources.displayMetrics.widthPixels*.84f).toInt(),-2)
+                }
+            }
+        }
         fun stopSession(message:String){
+            if(!disposed)phoneTyping(false)
             generation++;session?.let{PhoneRemoteControl.detach(it)};session=null;qr.setImageDrawable(null);qr.tag=null;qr.visibility=View.INVISIBLE
             status.text=message
         }
@@ -92,13 +110,14 @@ object GlassNameDialog {
                     val html=activity.assets.open("phone-keyboard.html").bufferedReader().use{it.readText()}
                     val next=PhoneTextSession(address,html,title,limit,initial,onText={incoming->main.post{
                         if(!disposed && request==generation && dialog.isShowing && session?.isOpen==true){
+                            phoneTyping(true)
                             field.setText(incoming);field.setSelection(field.length());status.setText(R.string.phone_keyboard_connected)
                         }
                     }},onExpired={main.post{if(!disposed && request==generation)stopSession("Code expired\nSelect New QR code.")}},onSubmit={incoming->main.post{
                         if(!disposed && request==generation && dialog.isShowing && session?.isOpen==true){
                             field.setText(incoming);field.setSelection(field.length());save.performClick()
                         }
-                    }},onRemote=PhoneRemoteControl.callback(activity))
+                    }},onRemote=PhoneRemoteControl.callback(activity),icon=activity.assets.open("luma-remote-icon.png").use{it.readBytes()},onInputReady={FastPhoneInput.ready()},onMagneticTarget={PhoneMouseCursor.magneticTarget()},onApps={PhoneRemoteControl.apps(activity)},onLaunch={PhoneRemoteControl.launch(activity,it)},onConnected={main.post{if(!disposed && request==generation)phoneTyping(true)}})
                     PhoneRemoteControl.register(next)
                     created=next
                     val phoneUrl=PhoneRemoteService.url(activity)?:next.url

@@ -11,6 +11,9 @@ import java.security.SecureRandom
 
 /** One warm input process and connection instead of a new Android VM for every button. */
 object FastPhoneInput {
+    @Volatile private var available=false
+    @Volatile private var lastAck=0L
+    fun ready()=available && android.os.SystemClock.elapsedRealtime()-lastAck<20000
     private var socket:Socket?=null
     private var reader:BufferedReader?=null
     private var output:OutputStream?=null
@@ -42,7 +45,10 @@ object FastPhoneInput {
     private fun send(value:String):Boolean{
         val target=output?:return false
         target.write((value+"\n").toByteArray());target.flush()
-        return reader?.readLine()=="OK"
+        val ok=reader?.readLine()=="OK"
+        available=ok
+        if(ok)lastAck=android.os.SystemClock.elapsedRealtime()
+        return ok
     }
-    @Synchronized fun close(){PhoneMouseCursor.close();runCatching{socket?.close()};socket=null;reader=null;output=null}
+    @Synchronized fun close(){available=false;PhoneMouseCursor.close();runCatching{socket?.close()};socket=null;reader=null;output=null}
 }
