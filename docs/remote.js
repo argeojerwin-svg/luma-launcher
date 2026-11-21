@@ -213,6 +213,7 @@
     if (!state.textEnabled) { input.disabled = true; send.disabled = true; message('Open a text field on the projector to type. Remote controls are available below.'); }
   }
   function setHealth(health) {
+    if (remoteStatus.dataset.health === health) return;
     remoteStatus.dataset.health = health;
     remoteStatus.textContent = health === 'ready' ? '● Connected · TV controls ready' : health === 'waiting' ? '● Connected · TV controls reconnecting' : '● Offline · reconnecting…';
   }

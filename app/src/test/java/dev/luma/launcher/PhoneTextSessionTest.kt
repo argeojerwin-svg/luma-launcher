@@ -88,6 +88,24 @@ class PhoneTextSessionTest {
             assertEquals(listOf("right","left"),commands)
         }
     }
+    @Test fun bufferedPipelinePreservesRequestsAndChecksEachTokenAndOrigin(){
+        val commands=java.util.concurrent.CopyOnWriteArrayList<String>()
+        PhoneTextSession(localhost,"page","remote",40,"",{},onRemote={commands.add(it);true},textTarget={null}).use{s->
+            val uri=URI(s.url)
+            Socket(uri.host,uri.port).use{socket->
+                socket.soTimeout=2000;socket.tcpNoDelay=true
+                fun packet(command:String,token:String,origin:String=""):String=
+                    "POST /remote HTTP/1.1\r\nHost: ${uri.host}:${uri.port}\r\nX-Luma-Token: $token\r\n"+
+                    (if(origin.isEmpty())"" else "Origin: $origin\r\n")+"Content-Length: ${command.length}\r\n\r\n$command"
+                val packets=packet("right",uri.fragment,PhoneTextSession.WEB_REMOTE_ORIGIN)+packet("up","wrong")+packet("left",uri.fragment)
+                socket.getOutputStream().apply{write(packets.toByteArray());flush()}
+                val first=readResponse(socket);assertTrue(first.endsWith("\r\n\r\nOK"));assertTrue(first.contains("Access-Control-Allow-Origin:"))
+                val denied=readResponse(socket);assertTrue(denied.startsWith("HTTP/1.1 403"));assertFalse(denied.contains("Access-Control-Allow-Origin:"))
+                val last=readResponse(socket);assertTrue(last.endsWith("\r\n\r\nOK"));assertFalse(last.contains("Access-Control-Allow-Origin:"))
+                assertEquals(listOf("right","left"),commands)
+            }
+        }
+    }
     @Test fun validPhoneInputAndStateUseUtf8(){
         val received=AtomicReference<String>()
         session(initial="original",onText={received.set(it)}).use{s->

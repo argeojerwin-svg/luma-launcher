@@ -47,3 +47,20 @@ Runtime checks covered app list/icons, app launching, readiness, pointer state,
 magnetic-target response, bounded scroll commands and unauthorized requests.
 JavaScript startup and Control Centre tap/hold/cancel checks passed. Real phone
 multi-touch gesture feel and optional cross-app highlights need user confirmation.
+
+## Touchpad latency update
+
+Remote HTTP connections now reuse one buffered input stream for up to 100
+requests, with a two-second idle timeout and the existing eight-worker limit.
+The last response explicitly closes the connection; malformed requests also
+close it when unread body bytes could remain. Every request still validates
+Host, Origin and its private token, including pipelined requests. The local
+input helper buffers its command stream too. The phone avoids repeated DOM
+updates when its connection-health state has not changed.
+
+Same-PC/P6 benchmark, median acknowledged HTTP request: pointer 40.1 → 9.8 ms
+(40 requests), arrows 30.7 → 8.9 ms (30), state 30.8 → 5.0 ms (30). Pointer p95
+improved from 48.0 to 24.0 ms. This excludes phone event processing, display
+refresh and the optional geometry helper's visual feedback. Cold connection
+startup remains slower. All 75 unit tests, release lint/signing and projector
+endpoint checks passed, including connection rollover during the benchmark.

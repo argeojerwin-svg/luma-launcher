@@ -73,7 +73,7 @@ object PhoneInputBridge {
             while(SystemClock.uptimeMillis()-last<120000){
                 try{server.accept().use{socket->
                     socket.tcpNoDelay=true;socket.soTimeout=30000
-                    val input=socket.getInputStream()
+                    val input=socket.getInputStream().buffered()
                     fun line():String?{
                         val bytes=java.io.ByteArrayOutputStream()
                         while(bytes.size()<128){val b=input.read();if(b<0)return null;if(b==10)return bytes.toString("UTF-8");bytes.write(b)}

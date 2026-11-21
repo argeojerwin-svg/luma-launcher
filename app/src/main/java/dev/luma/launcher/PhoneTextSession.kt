@@ -52,6 +52,7 @@ class PhoneTextSession(
     @Volatile private var active=true
     @Volatile private var text=clean(initial,limit)
     private val webOrigin=ThreadLocal<String?>()
+    private val finalRequest=ThreadLocal<Boolean>()
     private val edits=Any()
     private var submitted=false
     @Volatile private var textEnabled=true
@@ -67,7 +68,14 @@ class PhoneTextSession(
                     try {
                         val socket=server.accept().apply{soTimeout=2000;tcpNoDelay=true}
                         sockets.add(socket)
-                        try { workers.execute{socket.use{runCatching{serve(it)}};sockets.remove(socket)} }
+                        try { workers.execute{
+                            socket.use{connection->runCatching{
+                                // One buffer per connection also preserves bytes from pipelined requests.
+                                val input=connection.getInputStream().buffered()
+                                repeat(100){index->if(!isOpen)return@use;finalRequest.set(index==99);serve(connection,input)}
+                            }}
+                            sockets.remove(socket)
+                        } }
                         catch(_:RuntimeException){sockets.remove(socket);socket.close()}
                     }catch(_:SocketTimeoutException){/* Check expiry without holding a connection. */}
                 }
@@ -83,10 +91,9 @@ class PhoneTextSession(
     fun updateText(value:String){if(isOpen)text=clean(value,limit)}
     fun phoneConnected(){if(isOpen && textEnabled)onConnected?.invoke()}
 
-    private fun serve(socket:Socket){
+    private fun serve(socket:Socket,input:InputStream){
         webOrigin.remove()
-        val input=socket.getInputStream()
-        val header=readHeader(input)?:return
+        val header=readHeader(input)?:throw java.io.EOFException()
         val lines=header.split("\r\n")
         val request=lines.first().split(' ')
         if(request.size!=3){reply(socket,400,"Bad request");return}
@@ -214,13 +221,17 @@ class PhoneTextSession(
         replyBytes(socket,status,body.toByteArray(Charsets.UTF_8),type)
     }
     private fun replyBytes(socket:Socket,status:Int,bytes:ByteArray,type:String){
+        // Do not reuse a connection when a malformed request may leave unread body bytes.
+        val close=status in listOf(400,404,413) || finalRequest.get()==true
+        val connection=if(close)"Connection: close\r\n\r\n" else "Connection: keep-alive\r\nKeep-Alive: timeout=2, max=100\r\n\r\n"
         val phrase=when(status){200->"OK";204->"No Content";400->"Bad Request";403->"Forbidden";404->"Not Found";410->"Gone";409->"Conflict";else->"Payload Too Large"}
         val cors=webOrigin.get()?.let{"Access-Control-Allow-Origin: $it\r\nVary: Origin\r\nAccess-Control-Allow-Methods: GET, POST, OPTIONS\r\nAccess-Control-Allow-Headers: X-Luma-Token, Content-Type\r\nAccess-Control-Allow-Private-Network: true\r\nAccess-Control-Max-Age: 600\r\n"}.orEmpty()
         val headers="HTTP/1.1 $status $phrase\r\nContent-Type: $type\r\nContent-Length: ${bytes.size}\r\n"+
             "Cache-Control: no-store\r\nReferrer-Policy: no-referrer\r\nX-Content-Type-Options: nosniff\r\nX-Frame-Options: DENY\r\n"+
             "Content-Security-Policy: default-src 'none'; img-src 'self' data:; script-src 'nonce-$nonce'; style-src 'nonce-$nonce'; connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'\r\n"+
-            cors+"Connection: close\r\n\r\n"
+            cors+connection
         socket.getOutputStream().write(headers.toByteArray(Charsets.US_ASCII)+bytes)
+        if(close)socket.close()
     }
     @Synchronized override fun close(){
         if(!active)return
